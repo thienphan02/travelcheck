@@ -1,0 +1,157 @@
+/* Home css */
+.home-container {
+    padding: 20px;
+    text-align: center;
+    font-family: Arial, sans-serif;
+  }
+  
+  h1 {
+    color: #2c3e50;
+    font-size: 2.5em;
+    margin-top: 20px;
+  }
+  
+  .recommended-places {
+    margin-top: 20px;
+  }
+  
+  ul {
+    list-style-type: none;
+    padding: 0;
+  }
+  
+  li {
+    background-color: #f9f9f9;
+    padding: 10px;
+    margin: 10px 0;
+    border-radius: 5px;
+    font-size: 1.2em;
+  }
+  
+  /* Header css */
+  .header {
+    background-color: #e9f4ff;
+    color: black; /* Ensures text color is visible */
+    padding: 10px;
+    position: relative;
+    text-align: center; /* Center align text */
+  }
+  
+  .header h1 {
+    margin-top: 10px;
+  }
+  
+  .header .login-link {
+    position: absolute;
+    right: 20px;
+    top: 10px;
+    color: black; /* Ensure the link color is visible */
+  }
+  
+  .header nav {
+    margin-top: 20px;
+  }
+  
+  .header ul {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+    display: inline-block; /* Ensure ul is centered below h1 */
+  }
+  
+  .header ul li {
+    display: inline;
+    margin: 0 10px;
+  }
+  
+  .header ul li a {
+    color: black;
+    text-decoration: none;
+  }
+  
+  .header ul li a:hover {
+    text-decoration: underline;
+  }
+  
+  
+  
+  
+  /* Review css */
+  .review-container {
+    padding: 20px;
+    text-align: center;
+  }
+  
+  textarea {
+    width: 100%;
+    height: 100px;
+    margin: 10px 0;
+    padding: 10px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+  }
+  
+  .rating {
+    margin: 10px 0;
+  }
+  
+  button {
+    padding: 10px 20px;
+    background-color: #3498db;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+  
+  button:hover {
+    background-color: #2980b9;
+  }
+  
+  .review-link {
+    display: inline-block;
+    margin: 10px 20px;
+    padding: 10px 20px;
+    background-color: #3498db;
+    color: white;
+    text-decoration: none;
+    border-radius: 5px;
+  }
+
+  .review-link:hover {
+    background-color: #2980b9;
+  }
+
+  /* Map css */
+  .map-container {
+    padding: 5px;
+    text-align: center;
+  }
+  
+  .map-container h2 {
+    margin-bottom: 20px;
+  }
+  
+  #map {
+    width: 100%;
+    height: 500px;
+  }
+  
+
+  /* Blog css */
+  .blog-container {
+    padding: 20px;
+    text-align: center;
+  }
+  
+  h2 {
+    color: #2c3e50;
+    font-size: 2.5em;
+  }
+  
+  p {
+    margin-top: 20px;
+    font-size: 1.2em;
+  }
+  
+  
