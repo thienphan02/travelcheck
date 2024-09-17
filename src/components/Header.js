@@ -1,8 +1,24 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import '../styles/style.css';
 
 const Header = () => {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    // Check if a token exists in localStorage or sessionStorage
+    const token = localStorage.getItem('token');
+    setIsLoggedIn(!!token);
+  }, []);
+
+  const handleLogout = () => {
+    // Remove token from localStorage or sessionStorage
+    localStorage.removeItem('token');
+    setIsLoggedIn(false);
+    navigate('/login');
+  };
+
   return (
     <header className="header">
       <div className="header-content">
@@ -15,7 +31,11 @@ const Header = () => {
             <li><Link to="/blog">Blog</Link></li>
           </ul>
         </nav>
-        <Link to="/login" className="login-link">Login/SignUp</Link>
+        {isLoggedIn ? (
+          <button onClick={handleLogout} className="logout-button">Logout</button>
+        ) : (
+          <Link to="/login" className="login-link">Login/Sign Up</Link>
+        )}
       </div>
     </header>
   );

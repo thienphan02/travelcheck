@@ -5,6 +5,13 @@ const ReviewPage = () => {
   const [review, setReview] = useState('');
   const [rating, setRating] = useState(0);
   const [reviews, setReviews] = useState([]);
+  const [isLoggedIn, setIsLoggedIn] = useState(false); // Default is false
+
+  // Check if the user is logged in by checking for the token
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    setIsLoggedIn(!!token); // If the token exists, set isLoggedIn to true
+  }, []);
 
   useEffect(() => {
     const fetchReviews = async () => {
@@ -17,23 +24,31 @@ const ReviewPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Check if the user is logged in
+    if (!isLoggedIn) {
+      alert('You must be logged in to submit a review.');
+      return;
+    }
+
     const reviewData = {
       rating,
       review_text: review,
     };
 
     try {
+      const token = localStorage.getItem('token');
       const response = await fetch('http://localhost:5000/reviews', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}` // Include the token in the Authorization header
         },
         body: JSON.stringify(reviewData),
       });
 
       if (response.ok) {
         const result = await response.json();
-        console.log('Review submitted successfully:', result);
         setReviews((prev) => [...prev, result]); // Update the list with the new review
       } else {
         console.error('Failed to submit review');
