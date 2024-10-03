@@ -1,22 +1,37 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { jwtDecode } from 'jwt-decode';
 import '../styles/style.css';
+import gearIcon from '../img/settings-icon.png'; // Update the path as necessary
 
 const Header = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false); // State to check if user is admin
+  const [dropdownOpen, setDropdownOpen] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Check if a token exists in localStorage or sessionStorage
     const token = localStorage.getItem('token');
-    setIsLoggedIn(!!token);
+    if (token) {
+      setIsLoggedIn(true);
+
+      // Decode the token to check if the user is an admin
+      const decodedToken = jwtDecode(token);
+      if (decodedToken.userType === 'admin') {
+        setIsAdmin(true); // Set isAdmin to true if userType is 'admin'
+      }
+    }
   }, []);
 
   const handleLogout = () => {
-    // Remove token from localStorage or sessionStorage
     localStorage.removeItem('token');
     setIsLoggedIn(false);
+    setIsAdmin(false); // Reset admin status on logout
     navigate('/login');
+  };
+
+  const toggleDropdown = () => {
+    setDropdownOpen(prev => !prev);
   };
 
   return (
@@ -31,10 +46,26 @@ const Header = () => {
             <li><Link to="/blog">Blog</Link></li>
           </ul>
         </nav>
-        {isLoggedIn ? (
-          <button onClick={handleLogout} className="logout-button">Logout</button>
-        ) : (
-          <Link to="/login" className="login-link">Login/Sign Up</Link>
+        <div className="gear-icon" onClick={toggleDropdown}>
+          <img src={gearIcon} alt="Settings" style={{ width: '24px', height: '24px' }} /> {/* Adjust size as needed */}
+        </div>
+        {dropdownOpen && (
+          <div className="dropdown-menu">
+            {isLoggedIn ? (
+              <>
+                <Link to="/settings" className="dropdown-item">Settings</Link>
+                
+                {/* Conditionally render Manage Users link for admins */}
+                {isAdmin && (
+                  <Link to="/manage-users" className="dropdown-item">Manage Users</Link>
+                )}
+
+                <button onClick={handleLogout} className="dropdown-item">Logout</button>
+              </>
+            ) : (
+              <Link to="/login" className="dropdown-item">Login/Sign Up</Link>
+            )}
+          </div>
         )}
       </div>
     </header>

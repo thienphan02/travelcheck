@@ -1,50 +1,59 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { GoogleMap, useLoadScript, Marker, Autocomplete } from '@react-google-maps/api';
+import { GoogleMap, useLoadScript, Autocomplete, Marker } from '@react-google-maps/api';
 import '../styles/style.css';
 
-const libraries = ['places']; // Include libraries for search
+const LIBRARIES = ['places']; // Defined outside the component
+
 const mapContainerStyle = {
   width: '100%',
   height: '600px',
 };
 
 const MapPage = () => {
-  const [center, setCenter] = useState({ lat: 40.712776, lng: -74.005974 }); // Default to New York
+  const [center, setCenter] = useState({ lat: 40.712776, lng: -74.005974 }); // Default center to NYC
   const [markers, setMarkers] = useState([]);
   const [autocomplete, setAutocomplete] = useState(null);
-  const mapRef = useRef(); // Reference to the map
+  const mapRef = useRef();
 
   const { isLoaded, loadError } = useLoadScript({
-    googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY, // Use your Google Maps API key
-    libraries,
+    googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY, // Ensure this is set in your .env file
+    libraries: LIBRARIES,
   });
 
   useEffect(() => {
-    // Try to get the user's current location
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const { latitude, longitude } = position.coords;
-          setCenter({ lat: latitude, lng: longitude });
-        },
-        (error) => {
-          console.error("Error getting user's location:", error);
-        }
-      );
-    } else {
-      console.warn("Geolocation is not supported by this browser.");
-    }
+    const handleGeolocation = () => {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            const { latitude, longitude } = position.coords;
+            setCenter({ lat: latitude, lng: longitude });
+          },
+          (error) => {
+            console.error("Error getting user's location:", error);
+          }
+        );
+      } else {
+        console.warn("Geolocation is not supported by this browser.");
+      }
+    };
+
+    handleGeolocation();
   }, []);
 
   const onMapClick = useCallback((event) => {
-    setMarkers((current) => [
-      ...current,
-      {
-        lat: event.latLng.lat(),
-        lng: event.latLng.lng(),
-        time: new Date(),
-      },
-    ]);
+    const newMarker = {
+      lat: event.latLng.lat(),
+      lng: event.latLng.lng(),
+      time: new Date(),
+    };
+    setMarkers((current) => [...current, newMarker]);
+
+    if (window.google) {
+      new window.google.maps.Marker({
+        position: newMarker,
+        map: mapRef.current,
+      });
+    }
   }, []);
 
   const onSearch = () => {
@@ -70,6 +79,11 @@ const MapPage = () => {
               lat: place.geometry.location.lat(),
               lng: place.geometry.location.lng(),
             });
+
+            new window.google.maps.Marker({
+              position: place.geometry.location,
+              map: mapRef.current,
+            });
           }
         }
       );
@@ -83,13 +97,12 @@ const MapPage = () => {
     <div className="map-container">
       <h2>Find Places to Visit</h2>
       <div className="search-container">
-        <Autocomplete
-          onLoad={(autocomplete) => setAutocomplete(autocomplete)}
-        >
+        <Autocomplete onLoad={(autocomplete) => setAutocomplete(autocomplete)}>
           <input
             type="text"
             placeholder="Search for a place"
             style={{ width: '400px', padding: '8px', marginRight: '8px' }}
+            aria-label="Search for a place" // Accessibility improvement
           />
         </Autocomplete>
         <button onClick={onSearch}>Search</button>
@@ -105,7 +118,6 @@ const MapPage = () => {
           <Marker
             key={marker.time.toISOString()}
             position={{ lat: marker.lat, lng: marker.lng }}
-            label={marker.name}
           />
         ))}
       </GoogleMap>

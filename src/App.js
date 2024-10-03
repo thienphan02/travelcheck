@@ -7,6 +7,8 @@ import BlogPage from './pages/Blog';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import Header from './components/Header';
+import SettingsPage from './pages/Setting';
+import ManageUsers from './pages/ManageUsers';
 
 const AppContent = () => {
   const location = useLocation();
@@ -22,6 +24,8 @@ const AppContent = () => {
         <Route path="/blog" element={<BlogPage />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
+        <Route path="/settings" element={<SettingsPage />} />
+        <Route path="/manage-users" element={<ManageUsers />} />
       </Routes>
     </>
   );
