@@ -35,6 +35,12 @@ const ManageUsers = () => {
   }, []);
 
   const handleDelete = async (id) => {
+    const confirmDelete = window.confirm('Are you sure you want to delete this user and all their posts?');
+  
+    if (!confirmDelete) {
+      return; // Exit if admin cancels the deletion
+    }
+  
     const token = localStorage.getItem('token');
     try {
       const response = await fetch(`http://localhost:5000/users/${id}`, {
@@ -43,16 +49,20 @@ const ManageUsers = () => {
           Authorization: `Bearer ${token}`,
         },
       });
-
+  
       if (response.ok) {
         setUsers(users.filter((user) => user.id !== id));
+        alert('User and all associated posts deleted successfully');
       } else {
         console.error('Failed to delete user');
+        alert('Error: Unable to delete user');
       }
     } catch (error) {
       console.error('Error deleting user:', error);
+      alert('Error: Unable to delete user');
     }
   };
+  
 
   const handleEdit = (user) => {
     setEditUser(user);
@@ -96,7 +106,7 @@ const ManageUsers = () => {
       if (response.ok) {
         const createdUser = await response.json();
         setUsers([...users, createdUser]);
-        setNewUser({ username: '', email: '', userType: 'regular', password: '' }); // Reset form
+        setNewUser({ username: '', email: '', userType: 'member', password: '' }); // Reset form
       } else {
         console.error('Failed to create user');
       }

@@ -301,3 +301,10 @@
 .dropdown-item:hover {
   background-color: #f0f0f0; /* Highlight on hover */
 }
+
+.blog-image {
+  max-width: 100%; /* Ensure image is responsive */
+  height: auto;    /* Maintain aspect ratio */
+  margin-top: 10px; /* Add some space above the image */
+  border-radius: 8px; /* Optional: rounded corners */
+}
