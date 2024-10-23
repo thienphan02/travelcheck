@@ -69,6 +69,12 @@ const ManageUsers = () => {
   };
 
   const handleSaveEdit = async () => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(editUser.email)) {
+      alert('Invalid email format');
+      return;
+    }
+  
     const token = localStorage.getItem('token');
     try {
       const response = await fetch(`http://localhost:5000/users/${editUser.id}`, {
@@ -79,19 +85,28 @@ const ManageUsers = () => {
         },
         body: JSON.stringify(editUser),
       });
-
+  
       if (response.ok) {
         setUsers(users.map((user) => (user.id === editUser.id ? editUser : user)));
         setEditUser(null);
       } else {
-        console.error('Failed to update user');
+        const errorData = await response.json();
+        console.error('Failed to update user:', errorData.message);
+        alert(`Error: ${errorData.message}`);
       }
     } catch (error) {
       console.error('Error updating user:', error);
     }
   };
+  
 
   const handleCreateUser = async () => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(newUser.email)) {
+      alert('Invalid email format');
+      return;
+    }
+  
     const token = localStorage.getItem('token');
     try {
       const response = await fetch('http://localhost:5000/users', {
@@ -102,18 +117,21 @@ const ManageUsers = () => {
         },
         body: JSON.stringify(newUser),
       });
-
+  
       if (response.ok) {
         const createdUser = await response.json();
         setUsers([...users, createdUser]);
         setNewUser({ username: '', email: '', userType: 'member', password: '' }); // Reset form
       } else {
-        console.error('Failed to create user');
+        const errorData = await response.json();
+        console.error('Failed to create user:', errorData.message);
+        alert(`Error: ${errorData.message}`);
       }
     } catch (error) {
       console.error('Error creating user:', error);
     }
   };
+  
 
   if (loading) {
     return <div>Loading users...</div>;

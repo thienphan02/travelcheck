@@ -4,10 +4,11 @@ const SettingsPage = () => {
   const [userInfo, setUserInfo] = useState({ username: '', email: '', password: '' });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [emailError, setEmailError] = useState('');
 
   useEffect(() => {
     const token = localStorage.getItem('token');
-    
+
     const fetchUserInfo = async () => {
       try {
         const response = await fetch('http://localhost:5000/users/me', { // Adjust the endpoint to fetch the current user
@@ -35,27 +36,37 @@ const SettingsPage = () => {
   const handleUpdateUserInfo = async () => {
     const token = localStorage.getItem('token');
     try {
-        const response = await fetch('http://localhost:5000/users/me', {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify(userInfo),
-        });
+      const response = await fetch('http://localhost:5000/users/me', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(userInfo),
+      });
 
-        if (response.ok) {
-            alert('User information updated successfully');
-        } else {
-            const errorData = await response.json(); // Read the response for error details
-            console.error('Failed to update user information:', errorData.message);
-            alert(`Error: ${errorData.message}`);
-        }
+      if (response.ok) {
+        alert('User information updated successfully');
+      } else {
+        const errorData = await response.json(); // Read the response for error details
+        console.error('Failed to update user information:', errorData.message);
+        alert(`Error: ${errorData.message}`);
+      }
     } catch (error) {
-        console.error('Error updating user information:', error);
+      console.error('Error updating user information:', error);
     }
-};
+  };
 
+  const handleEmailChange = (e) => {
+    setUserInfo({ ...userInfo, email: e.target.value });
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(e.target.value)) {
+      setEmailError('Invalid email format');
+    } else {
+      setEmailError('');
+    }
+  };
 
   if (loading) {
     return <div>Loading user information...</div>;
@@ -78,9 +89,11 @@ const SettingsPage = () => {
         <input
           type="email"
           value={userInfo.email}
-          onChange={(e) => setUserInfo({ ...userInfo, email: e.target.value })}
+          onChange={handleEmailChange}
           placeholder="Email"
         />
+        {emailError && <p className="error">{emailError}</p>}
+
         <input
           type="password"
           value={userInfo.password}

@@ -54,6 +54,10 @@ const Header = () => {
             {isLoggedIn ? (
               <>
                 <Link to="/settings" className="dropdown-item">Settings</Link>
+
+                <Link to="/manage-post" className="dropdown-item">Manage Posts</Link>
+
+                <Link to="/favorite" className="dropdown-item">Favorite</Link>
                 
                 {/* Conditionally render Manage Users link for admins */}
                 {isAdmin && (

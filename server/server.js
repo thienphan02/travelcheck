@@ -295,6 +295,7 @@ app.post('/reviews/:id/comments', verifyToken, (req, res) => {
   });
 });
 
+
 app.get('/blogs', (req, res) => {
   const sql = `
     SELECT blog_posts.*, users.username 
@@ -308,7 +309,6 @@ app.get('/blogs', (req, res) => {
 });
 
 app.post('/blogs', verifyToken, isMember, upload.single('image'), (req, res) => {
-  console.log('Received a POST request for /blogs', req.file.filename); // Debug log
   
   const { title, content, location, location_type } = req.body;
     const authorId = req.userId;
@@ -470,37 +470,44 @@ app.post('/blogs/:id/comments', verifyToken, (req, res) => {
 
 
 
-  // Updated Sign-up Endpoint
-  app.post('/signup', async (req, res) => {
-    const { username, password, email, userType = 'member' } = req.body; // Default to 'member'
-    const hashedPassword = await bcrypt.hash(password, 10);
+app.post('/signup', async (req, res) => {
+  const { username, password, email, userType = 'member' } = req.body;
   
-    // Restrict 'admin' role creation
-    if (userType === 'admin') {
+  // Email validation regex
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+      return res.status(400).json({ message: 'Invalid email format' });
+  }
+
+  const hashedPassword = await bcrypt.hash(password, 10);
+
+  // Restrict 'admin' role creation
+  if (userType === 'admin') {
       return res.status(403).json({ message: 'Cannot create admin accounts via signup' });
-    }
-  
-    // Check if email already exists
-    const checkEmailSql = 'SELECT * FROM users WHERE email = ?';
-    db.query(checkEmailSql, [email], async (err, results) => {
+  }
+
+  // Check if email already exists
+  const checkEmailSql = 'SELECT * FROM users WHERE email = ?';
+  db.query(checkEmailSql, [email], async (err, results) => {
       if (err) {
-        return res.status(500).json({ message: 'Error checking email' });
+          return res.status(500).json({ message: 'Error checking email' });
       }
       if (results.length > 0) {
-        return res.status(400).json({ message: 'Email already in use' });
+          return res.status(400).json({ message: 'Email already in use' });
       }
-  
+
       // Proceed with creating the user
       const sql = 'INSERT INTO users (username, password, email, user_type) VALUES (?, ?, ?, ?)';
       db.query(sql, [username, hashedPassword, email, userType], (err, result) => {
-        if (err) {
-          res.status(500).json({ message: 'Error creating user' });
-        } else {
-          res.status(201).json({ message: 'User created successfully' });
-        }
+          if (err) {
+              res.status(500).json({ message: 'Error creating user' });
+          } else {
+              res.status(201).json({ message: 'User created successfully' });
+          }
       });
-    });
   });
+});
+
 
   
 // Updated Login with JWT
@@ -530,11 +537,225 @@ app.post('/login', (req, res) => {
   });
 });
 
+// Get all reviews by the logged-in user
+app.get('/manage/reviews', verifyToken, (req, res) => {
+  const userId = req.userId; // Assuming user ID is available after token verification
+  db.query('SELECT * FROM reviews WHERE writer_id = ?', [userId], (err, results) => {
+    if (err) return res.status(500).json({ message: 'Error fetching reviews' });
+    res.json(results);
+  });
+});
+
+// Get all comments by the logged-in user
+app.get('/manage/comments', verifyToken, (req, res) => {
+  const userId = req.userId;
+  db.query('SELECT * FROM review_comments WHERE user_id = ?', [userId], (err, results) => {
+    if (err) return res.status(500).json({ message: 'Error fetching comments' });
+    res.json(results);
+  });
+});
+
+// Update a review
+app.put('/reviews/:id', verifyToken, upload.single('image'), (req, res) => {
+  const reviewId = req.params.id;
+  const { review_text, rating, delete_image } = req.body; // Add delete_image to body
+  const imageUrl = req.file ? `http://localhost:5000/uploads/${req.file.filename}` : null; // New image URL if an image is uploaded
+
+  // SQL statement for updating the review
+  const sql = 'UPDATE reviews SET review_text = ?, rating = ?, image_url = ? WHERE id = ? AND writer_id = ?';
+  
+  // Determine the final image URL
+  const finalImageUrl = delete_image === 'true' ? null : imageUrl;
+
+  db.query(sql, [review_text, rating, finalImageUrl, reviewId, req.userId], (err) => {
+    if (err) {
+      console.error('Error updating review:', err);
+      return res.status(500).json({ message: 'Error updating review' });
+    }
+    
+    res.json({ message: 'Review updated successfully' });
+  });
+});
+
+// Delete a review
+app.delete('/reviews/:id', verifyToken, (req, res) => {
+  const reviewId = req.params.id;
+  db.query('DELETE FROM reviews WHERE id = ? AND writer_id = ?', [reviewId, req.userId], (err) => {
+    if (err) return res.status(500).json({ message: 'Error deleting review' });
+    res.json({ message: 'Review deleted successfully' });
+  });
+});
+
+// Update a comment
+app.put('/comments/:id', verifyToken, (req, res) => {
+  const commentId = req.params.id;
+  const { comment } = req.body;
+  db.query('UPDATE review_comments SET comment = ? WHERE id = ? AND user_id = ?', 
+    [comment, commentId, req.userId], (err) => {
+      if (err) return res.status(500).json({ message: 'Error updating comment' });
+      res.json({ message: 'Comment updated successfully' });
+    });
+});
+
+// Delete a comment
+app.delete('/comments/:id', verifyToken, (req, res) => {
+  const commentId = req.params.id;
+  db.query('DELETE FROM review_comments WHERE id = ? AND user_id = ?', [commentId, req.userId], (err) => {
+    if (err) return res.status(500).json({ message: 'Error deleting comment' });
+    res.json({ message: 'Comment deleted successfully' });
+  });
+});
+
+app.get('/manage/blogs', verifyToken, (req, res) => {
+  const userId = req.userId; // Assuming user ID is available after token verification
+  db.query('SELECT * FROM blog_posts WHERE author_id = ?', [userId], (err, results) => {
+    if (err) return res.status(500).json({ message: 'Error fetching blogs' });
+    res.json(results);
+  });
+});
+
+// Get all comments by the logged-in user
+app.get('/manage/blog-comments', verifyToken, (req, res) => {
+  const userId = req.userId;
+  db.query('SELECT * FROM comments WHERE user_id = ?', [userId], (err, results) => {
+    if (err) return res.status(500).json({ message: 'Error fetching blog comments' });
+    res.json(results);
+  });
+});
+
+// Update a blog
+app.put('/blogs/:id', verifyToken, upload.single('image'), (req, res) => {
+  const blogId = req.params.id;
+  const { content, title, delete_image } = req.body; // Add delete_image to body
+  const imageUrl = req.file ? `http://localhost:5000/uploads/${req.file.filename}` : null; // New image URL if an image is uploaded
+
+  // SQL statement for updating the review
+  const sql = 'UPDATE blog_posts SET content = ?, title = ?, image_url = ? WHERE id = ? AND author_id = ?';
+  
+  // Determine the final image URL
+  const finalImageUrl = delete_image === 'true' ? null : imageUrl;
+
+  db.query(sql, [content, title, finalImageUrl, blogId, req.userId], (err) => {
+    if (err) {
+      console.error('Error updating blog:', err);
+      return res.status(500).json({ message: 'Error updating blog' });
+    }
+    
+    res.json({ message: 'Blog updated successfully' });
+  });
+});
+
+// Delete a blog
+app.delete('/blogs/:id', verifyToken, (req, res) => {
+  const blogID = req.params.id;
+  db.query('DELETE FROM blog_posts WHERE id = ? AND author_id = ?', [blogID, req.userId], (err) => {
+    if (err) return res.status(500).json({ message: 'Error deleting review' });
+    res.json({ message: 'Blog deleted successfully' });
+  });
+});
+
+// Update a comment
+app.put('/blog-comments/:id', verifyToken, (req, res) => {
+  const blogcommentId = req.params.id;
+  const { comment } = req.body;
+  db.query('UPDATE comments SET comment = ? WHERE id = ? AND user_id = ?', 
+    [comment, blogcommentId, req.userId], (err) => {
+      if (err) return res.status(500).json({ message: 'Error updating blog comment' });
+      res.json({ message: 'Blog comment updated successfully' });
+    });
+});
+
+// Delete a comment
+app.delete('/blog-comments/:id', verifyToken, (req, res) => {
+  const blogcommentId = req.params.id;
+  db.query('DELETE FROM comments WHERE id = ? AND user_id = ?', [blogcommentId, req.userId], (err) => {
+    if (err) return res.status(500).json({ message: 'Error deleting blog comment' });
+    res.json({ message: 'Clog comment deleted successfully' });
+  });
+});
+
+app.get('/map/reviews', (req, res) => {
+  const { location } = req.query;
+
+  let sql = `
+    SELECT reviews.id, reviews.rating, reviews.review_text, users.username, reviews.location, reviews.type, reviews.created_at, reviews.image_url, avg_reviews.avg_rating
+    FROM reviews
+    LEFT JOIN users ON reviews.writer_id = users.id
+    LEFT JOIN (
+      SELECT location, AVG(rating) AS avg_rating
+      FROM reviews
+      GROUP BY location
+    ) AS avg_reviews ON reviews.location = avg_reviews.location
+    WHERE reviews.location = ?
+  `;
+  const params = [];
+
+  if (location) {
+    params.push(location);
+  }
+
+  db.query(sql, params, (err, results) => {
+    if (err) {
+      console.error('Error fetching reviews:', err);
+      return res.status(500).json({ message: 'Error fetching reviews' });
+    }
+    res.json(results);
+  });
+});
+
+
+// Add a favorite location
+app.post('/favorites', verifyToken, (req, res) => {
+  const userId = req.userId; // From the token
+  const { name, address } = req.body;
+
+  const sql = 'INSERT INTO favorites (user_id, name, address) VALUES (?, ?, ?)';
+  db.query(sql, [userId, name, address], (err, result) => {
+    if (err) {
+      return res.status(500).json({ message: 'Error adding favorite' });
+    }
+    res.status(201).json({ id: result.insertId, name, address });
+  });
+});
+
+
+
+// Fetch all favorite locations for a user
+app.get('/favorites', verifyToken, (req, res) => {
+  const userId = req.userId;
+
+  const sql = 'SELECT * FROM favorites WHERE user_id = ?';
+  db.query(sql, [userId], (err, results) => {
+    if (err) {
+      return res.status(500).json({ message: 'Error fetching favorites' });
+    }
+    res.json(results);
+  });
+});
+
+
+// Delete a favorite location
+app.delete('/favorites/:id', verifyToken, (req, res) => {
+  const userId = req.userId;
+  const favoriteId = req.params.id;
+
+  const sql = 'DELETE FROM favorites WHERE id = ? AND user_id = ?';
+  db.query(sql, [favoriteId, userId], (err, result) => {
+    if (err) {
+      return res.status(500).json({ message: 'Error deleting favorite' });
+    }
+    res.status(204).send(); // No content
+  });
+});
+
+
+
+
 
 // Assuming you have a middleware to verify tokens
 app.get('/users/me', verifyToken, (req, res) => {
   // Access the user ID from the token
-  const userId = req.user.id; // Make sure your verifyToken middleware sets req.user
+  const userId = req.userId; // Make sure your verifyToken middleware sets req.user
   
   // SQL query to fetch user details
   const sql = 'SELECT id, username, email FROM users WHERE id = ?';
@@ -556,20 +777,38 @@ app.get('/users/me', verifyToken, (req, res) => {
 
 // Edit user info (logged-in user only)
 app.put('/users/me', verifyToken, (req, res) => {
-  const userId = req.user.id; // Get the user ID from the token
+  const userId = req.userId; // Get the user ID from the token
   const { username, email, userType } = req.body; // Get user details from the request body
 
-  // Prepare the SQL query to update the user details
-  const sql = 'UPDATE users SET username = ?, password = ?, email = ?, user_type = ? WHERE id = ?';
+  // Email validation regex
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    return res.status(400).json({ message: 'Invalid email format' });
+  }
 
-  // Execute the SQL query with the provided details and the authenticated user's ID
-  db.query(sql, [username, email, userType, userId], (err, result) => {
+  // Check if email is already in use by another user
+  const checkEmailSql = 'SELECT * FROM users WHERE email = ? AND id != ?';
+  db.query(checkEmailSql, [email, userId], (err, results) => {
     if (err) {
-      return res.status(500).json({ message: 'Error updating user' }); // Handle SQL error
+      return res.status(500).json({ message: 'Error checking email' });
     }
-    res.status(200).json({ message: 'User updated successfully' }); // Respond with success message
+    if (results.length > 0) {
+      return res.status(400).json({ message: 'Email already in use by another user' });
+    }
+
+    // Prepare the SQL query to update the user details
+    const sql = 'UPDATE users SET username = ?, email = ? WHERE id = ?';
+
+    // Execute the SQL query with the provided details and the authenticated user's ID
+    db.query(sql, [username, email, userId], (err, result) => {
+      if (err) {
+        return res.status(500).json({ message: 'Error updating user' });
+      }
+      res.status(200).json({ message: 'User updated successfully' });
+    });
   });
 });
+
 
 // This route will be accessible only by admin
 app.get('/users', verifyToken, (req, res) => {
@@ -587,26 +826,65 @@ app.post('/users', verifyToken, async (req, res) => {
   const { username, password, email, userType } = req.body;
   const hashedPassword = await bcrypt.hash(password, 10);
 
-  const sql = 'INSERT INTO users (username, password, email, user_type) VALUES (?, ?, ?, ?)';
-  db.query(sql, [username, hashedPassword, email, userType], (err, result) => {
+  // Email validation regex
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    return res.status(400).json({ message: 'Invalid email format' });
+  }
+
+  // Check if email already exists
+  const checkEmailSql = 'SELECT * FROM users WHERE email = ?';
+  db.query(checkEmailSql, [email], (err, results) => {
     if (err) {
-      return res.status(500).json({ message: 'Error creating user' });
+      return res.status(500).json({ message: 'Error checking email' });
     }
-    res.status(201).json({ message: 'User created successfully' });
+    if (results.length > 0) {
+      return res.status(400).json({ message: 'Email already in use' });
+    }
+
+    // If email is valid and unique, create user
+    const sql = 'INSERT INTO users (username, password, email, user_type) VALUES (?, ?, ?, ?)';
+    db.query(sql, [username, hashedPassword, email, userType], (err, result) => {
+      if (err) {
+        return res.status(500).json({ message: 'Error creating user' });
+      }
+      res.status(201).json({ message: 'User created successfully' });
+    });
   });
 });
+
 
 // Edit user (admin only)
 app.put('/users/:id', verifyToken, (req, res) => {
   const { username, email, userType } = req.body;
-  const sql = 'UPDATE users SET username = ?, password = ?, email = ?, user_type = ? WHERE id = ?';
-  db.query(sql, [username, email, userType, req.params.id], (err, result) => {
+
+  // Email validation regex
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    return res.status(400).json({ message: 'Invalid email format' });
+  }
+
+  // Check if email is already in use by another user
+  const checkEmailSql = 'SELECT * FROM users WHERE email = ? AND id != ?';
+  db.query(checkEmailSql, [email, req.params.id], (err, results) => {
     if (err) {
-      return res.status(500).json({ message: 'Error updating user' });
+      return res.status(500).json({ message: 'Error checking email' });
     }
-    res.status(200).json({ message: 'User updated successfully' });
+    if (results.length > 0) {
+      return res.status(400).json({ message: 'Email already in use by another user' });
+    }
+
+    // Update user information
+    const sql = 'UPDATE users SET username = ?, email = ?, user_type = ? WHERE id = ?';
+    db.query(sql, [username, email, userType, req.params.id], (err, result) => {
+      if (err) {
+        return res.status(500).json({ message: 'Error updating user' });
+      }
+      res.status(200).json({ message: 'User updated successfully' });
+    });
   });
 });
+
 
 // Delete user (admin only)
 app.delete('/users/:id', verifyToken, (req, res) => {

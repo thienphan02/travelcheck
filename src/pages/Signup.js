@@ -8,6 +8,7 @@ const SignUpPage = () => {
     const [email, setEmail] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+    const [emailError, setEmailError] = useState('');
     const navigate = useNavigate();
 
     const handleSubmit = async (e) => {
@@ -40,17 +41,30 @@ const SignUpPage = () => {
         }
     };
 
+    const handleEmailChange = (e) => {
+        setEmail(e.target.value);
+
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(e.target.value)) {
+            setEmailError('Invalid email format');
+        } else {
+            setEmailError('');
+        }
+    };
+
     return (
         <div className="auth-container">
             <h2>Sign Up</h2>
             <form onSubmit={handleSubmit}>
-              <input
+                <input
                     type="email"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    onChange={handleEmailChange}
                     placeholder="Email"
                     required
                 />
+                {emailError && <p className="error">{emailError}</p>}
+
                 <input
                     type="text"
                     value={username}

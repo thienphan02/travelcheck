@@ -308,3 +308,48 @@
   margin-top: 10px; /* Add some space above the image */
   border-radius: 8px; /* Optional: rounded corners */
 }
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.modal-content {
+  background: white;
+  padding: 20px;
+  max-width: 600px;
+  width: 100%;
+  max-height: 80vh; /* Set max height relative to the viewport height */
+  overflow-y: auto; /* Enable vertical scrolling */
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  position: relative; /* Ensure the close button remains in place */
+}
+
+
+.close-button {
+  background: black;
+  border: none;
+  font-size: 24px;
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  cursor: pointer;
+}
+
+.modal-images img {
+  margin-top: 10px;
+  width: 100%;
+}
+
+.rev-image {
+  width: 100px;
+  height: auto;
+}
