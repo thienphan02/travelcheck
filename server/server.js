@@ -33,7 +33,7 @@ const JWT_SECRET = process.env.JWT_SECRET;
 
 const db = mysql.createConnection({
   host: 'localhost',
-  user: 'root', 
+  user: 'root',
   password: process.env.DB_PASSWORD,
   database: 'travel_reviews'
 });
@@ -45,41 +45,41 @@ db.connect((err) => {
   console.log('MySQL Connected...');
 });
 
-  // JWT Token Verification Middleware
-  const verifyToken = (req, res, next) => {
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
-  
-    if (!token) return res.status(403).json({ message: 'No token provided' });
-  
-    jwt.verify(token, JWT_SECRET, (err, decoded) => {
-      if (err) {
-        console.error('Token verification error:', err);
-        return res.status(500).json({ message: 'Failed to authenticate token' });
-      }
-  
-      if (!decoded) {
-        return res.status(401).json({ message: 'Invalid token' });
-      }
-  
-      // Set user info from the decoded token
-      req.userId = decoded.id;
-      req.userType = decoded.userType;
-      next();
-    });
-  };
-  
-  // Middleware to check if user is a 'member'
-  const isMember = (req, res, next) => {
-    if (req.userType === 'member' || req.userType === 'admin') {
-      next(); // Proceed if user is a member
-    } else {
-      res.status(403).json({ message: 'Access denied. Only members can post reviews.' });
-    }
-  };
-  
+// JWT Token Verification Middleware
+const verifyToken = (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
 
-  // Middleware to check if user is an 'admin'
+  if (!token) return res.status(403).json({ message: 'No token provided' });
+
+  jwt.verify(token, JWT_SECRET, (err, decoded) => {
+    if (err) {
+      console.error('Token verification error:', err);
+      return res.status(500).json({ message: 'Failed to authenticate token' });
+    }
+
+    if (!decoded) {
+      return res.status(401).json({ message: 'Invalid token' });
+    }
+
+    // Set user info from the decoded token
+    req.userId = decoded.id;
+    req.userType = decoded.userType;
+    next();
+  });
+};
+
+// Middleware to check if user is a 'member'
+const isMember = (req, res, next) => {
+  if (req.userType === 'member' || req.userType === 'admin') {
+    next(); // Proceed if user is a member
+  } else {
+    res.status(403).json({ message: 'Access denied. Only members can post reviews.' });
+  }
+};
+
+
+// Middleware to check if user is an 'admin'
 const isAdmin = (req, res, next) => {
   if (req.userType === 'admin') {
     next(); // Proceed if user is an admin
@@ -119,202 +119,201 @@ const upload = multer({
   }
 });
 
-// Example endpoint to get reviews filtered by location
-app.get('/reviews', (req, res) => {
-  const { location } = req.query;
-  
-  let sql = 'SELECT reviews.*, users.username FROM reviews LEFT JOIN users ON reviews.writer_id = users.id';
-  const params = [];
+// Get or create location
+app.post('/locations', (req, res) => {
+  const { name, address } = req.body;
 
-  if (location) {
-    sql += ' WHERE location = ?';
-    params.push(location);
+  const findLocationSQL = 'SELECT * FROM locations WHERE name = ? AND address = ?';
+  db.query(findLocationSQL, [name, address], (err, results) => {
+    if (err) return res.status(500).json({ message: 'Error fetching location' });
+
+    if (results.length > 0) {
+      // Location already exists
+      return res.json(results[0]);
+    } else {
+      // Create new location
+      const insertLocationSQL = 'INSERT INTO locations (name, address) VALUES (?, ?)';
+      db.query(insertLocationSQL, [name, address], (err, result) => {
+        if (err) return res.status(500).json({ message: 'Error creating location' });
+
+        res.json({ id: result.insertId, name, address });
+      });
+    }
+  });
+});
+
+
+// Endpoint to fetch reviews
+// Fetch reviews and check if the user has liked each review
+app.get('/reviews', verifyToken, (req, res) => {
+  const { location_id } = req.query;
+  const userId = req.userId || null; // Capture user ID from token if available
+
+  let sql = `
+    SELECT reviews.*, 
+           users.username, 
+           locations.name AS location_name, 
+           locations.address AS location_address,
+           IFNULL(SUM(review_likes_dislikes.liked), 0) AS like_count,
+           MAX(CASE WHEN review_likes_dislikes.user_id = ? AND review_likes_dislikes.liked = true THEN 1 ELSE 0 END) AS user_liked
+    FROM reviews
+    LEFT JOIN users ON reviews.writer_id = users.id
+    LEFT JOIN locations ON reviews.location_id = locations.id
+    LEFT JOIN review_likes_dislikes 
+      ON reviews.id = review_likes_dislikes.review_id
+    GROUP BY reviews.id, users.username, locations.name, locations.address
+  `;
+
+  const params = [userId];
+
+  if (location_id) {
+    sql += ' HAVING reviews.location_id = ?';
+    params.push(location_id);
   }
 
   db.query(sql, params, (err, results) => {
     if (err) {
       console.error('Error fetching reviews:', err);
-      return res.status(500).json({ message: 'Error fetching reviews' });
+      return res.status(500).json([]);
     }
-    res.json(results);
+    res.json(results || []);
   });
 });
 
-// Post a review
+
+// Endpoint to submit a review
 app.post('/reviews', verifyToken, isMember, upload.single('image'), (req, res) => {
-  const { rating, review_text, location, type } = req.body;
+  const { rating, review_text, location_id } = req.body;
   const writerId = req.userId;
   const imageUrl = req.file ? `http://localhost:5000/uploads/${req.file.filename}` : null;
 
-  // Check if the user is authenticated
-  if (!writerId) {
-    return res.status(401).json({ message: 'User not authenticated' });
+  if (!location_id || !review_text) {
+    return res.status(400).json({ message: 'Location ID and review text are required' });
   }
 
-  // Validate required fields
-  if (!location || !type || !review_text) {
-    return res.status(400).json({ message: 'Location, type, and review text are required' });
-  }
+  const sql = 'INSERT INTO reviews (rating, review_text, writer_id, location_id, image_url) VALUES (?, ?, ?, ?, ?)';
+  db.query(sql, [rating, review_text, writerId, location_id, imageUrl], (err, result) => {
+    if (err) return res.status(500).json({ message: 'Error submitting review' });
 
-  // SQL statement for inserting review
-  const sql = 'INSERT INTO reviews (rating, review_text, writer_id, location, type, image_url) VALUES (?, ?, ?, ?, ?, ?)';
-
-  // Execute the SQL query
-  db.query(sql, [rating, review_text, writerId, location, type, imageUrl], (err, result) => {
-    if (err) {
-      console.error('Error inserting review:', err);
-      return res.status(500).json({ message: 'Error submitting review' });
-    }
-    
-    // Respond with the newly created review details
     res.json({
       id: result.insertId,
       rating,
       review_text,
-      location,
-      type,
+      location_id,
       image_url: imageUrl,
       writer_id: writerId,
     });
   });
 });
 
-// Like a review
-app.post('/reviews/:id/like', verifyToken, isMember, (req, res) => {
+app.post('/reviews/:id/like', verifyToken, (req, res) => {
   const reviewId = req.params.id;
-  const userId = req.userId;
+  const userId = req.userId; // Extracted from verifyToken middleware
 
-  // Check if the user has already liked or disliked this review
-  const checkSql = 'SELECT liked FROM review_likes_dislikes WHERE review_id = ? AND user_id = ?';
-  db.query(checkSql, [reviewId, userId], (err, result) => {
-    if (err) return res.status(500).json({ message: 'Error checking like status' });
+  const sql = `
+    INSERT INTO review_likes_dislikes (review_id, user_id, liked)
+    VALUES (?, ?, true)
+    ON DUPLICATE KEY UPDATE liked = NOT liked; -- Simplified toggle logic
+  `;
 
-    if (result.length > 0) {
-      if (result[0].liked === true) {
-        // User already liked the review, remove like
-        const deleteSql = 'DELETE FROM review_likes_dislikes WHERE review_id = ? AND user_id = ?';
-        db.query(deleteSql, [reviewId, userId], (err) => {
-          if (err) return res.status(500).json({ message: 'Error removing like' });
-          return res.json({ message: 'Like removed' });
-        });
-      } else {
-        // User had disliked, change to like
-        const updateSql = 'UPDATE review_likes_dislikes SET liked = true WHERE review_id = ? AND user_id = ?';
-        db.query(updateSql, [reviewId, userId], (err) => {
-          if (err) return res.status(500).json({ message: 'Error updating like' });
-          return res.json({ message: 'Review liked' });
-        });
-      }
-    } else {
-      // Add a new like
-      const insertSql = 'INSERT INTO review_likes_dislikes (review_id, user_id, liked) VALUES (?, ?, true)';
-      db.query(insertSql, [reviewId, userId], (err) => {
-        if (err) return res.status(500).json({ message: 'Error liking review' });
-        return res.json({ message: 'Review liked' });
-      });
+  db.query(sql, [reviewId, userId], (err) => {
+    if (err) {
+      console.error('Error updating like status:', err);
+      return res.status(500).json({ message: 'Error updating like status' });
     }
+
+    const getLikesQuery = `
+      SELECT COUNT(*) AS likes_count
+      FROM review_likes_dislikes
+      WHERE review_id = ? AND liked = true;
+    `;
+
+    db.query(getLikesQuery, [reviewId], (err, result) => {
+      if (err) {
+        console.error('Error fetching likes:', err);
+        return res.status(500).json({ message: 'Error fetching likes' });
+      }
+
+      res.json({ likes_count: result[0].likes_count });
+    });
   });
 });
 
-// Dislike a review
-app.post('/reviews/:id/dislike', verifyToken, isMember, (req, res) => {
-  const reviewId = req.params.id;
-  const userId = req.userId;
 
-  // Check if the user has already liked or disliked this review
-  const checkSql = 'SELECT liked FROM review_likes_dislikes WHERE review_id = ? AND user_id = ?';
-  db.query(checkSql, [reviewId, userId], (err, result) => {
-    if (err) return res.status(500).json({ message: 'Error checking dislike status' });
 
-    if (result.length > 0) {
-      if (result[0].liked === false) {
-        // User already disliked the review, remove dislike
-        const deleteSql = 'DELETE FROM review_likes_dislikes WHERE review_id = ? AND user_id = ?';
-        db.query(deleteSql, [reviewId, userId], (err) => {
-          if (err) return res.status(500).json({ message: 'Error removing dislike' });
-          return res.json({ message: 'Dislike removed' });
-        });
-      } else {
-        // User had liked, change to dislike
-        const updateSql = 'UPDATE review_likes_dislikes SET liked = false WHERE review_id = ? AND user_id = ?';
-        db.query(updateSql, [reviewId, userId], (err) => {
-          if (err) return res.status(500).json({ message: 'Error updating dislike' });
-          return res.json({ message: 'Review disliked' });
-        });
-      }
-    } else {
-      // Add a new dislike
-      const insertSql = 'INSERT INTO review_likes_dislikes (review_id, user_id, liked) VALUES (?, ?, false)';
-      db.query(insertSql, [reviewId, userId], (err) => {
-        if (err) return res.status(500).json({ message: 'Error disliking review' });
-        return res.json({ message: 'Review disliked' });
-      });
-    }
-  });
-});
-
-// Fetch comments for a specific review
 app.get('/reviews/:id/comments', (req, res) => {
   const reviewId = req.params.id;
 
   const sqlFetchComments = `
-    SELECT review_comments.comment, users.username
-    FROM review_comments 
+    SELECT review_comments.id, review_comments.comment, users.username
+    FROM review_comments
     LEFT JOIN users ON review_comments.user_id = users.id
     WHERE review_comments.review_id = ?
   `;
+  
   db.query(sqlFetchComments, [reviewId], (err, comments) => {
     if (err) return res.status(500).json({ message: 'Error fetching comments' });
 
-    res.json(comments); // Return the list of comments
+    res.json(comments); // Return only the comments array
   });
 });
 
-// Post a comment on a review
+
+
 app.post('/reviews/:id/comments', verifyToken, (req, res) => {
   const reviewId = req.params.id;
-  const comment = req.body.comment;
+  const { comment } = req.body;
   const userId = req.userId;
 
-  // Check if the user is authenticated
-  if (!userId) {
-    return res.status(401).json({ message: 'User not authenticated' });
-  }
-
-  // Validate the comment
-  if (!comment) {
+  if (!comment || !comment.trim()) {
     return res.status(400).json({ message: 'Comment cannot be empty' });
   }
 
-  // SQL statement for inserting comment
   const sql = 'INSERT INTO review_comments (review_id, user_id, comment) VALUES (?, ?, ?)';
   db.query(sql, [reviewId, userId, comment], (err, result) => {
     if (err) return res.status(500).json({ message: 'Error submitting comment' });
 
-    res.status(201).json({ message: 'Comment submitted successfully' }); // Respond with success message
+    const newComment = {
+      id: result.insertId,
+      username: req.userName,  // Ensure username is available in request (from token, perhaps)
+      comment,
+    };
+    
+    res.status(201).json(newComment);
   });
 });
 
 
+
+// Fetch blogs along with the author information
 app.get('/blogs', (req, res) => {
   const sql = `
-    SELECT blog_posts.*, users.username 
-    FROM blog_posts 
+    SELECT blog_posts.*, users.username, 
+           COALESCE(likes_data.likes_count, 0) AS likes_count
+    FROM blog_posts
     LEFT JOIN users ON blog_posts.author_id = users.id
+    LEFT JOIN (
+      SELECT post_id, COUNT(*) AS likes_count
+      FROM likes_dislikes
+      WHERE liked = true
+      GROUP BY post_id
+    ) AS likes_data ON blog_posts.id = likes_data.post_id
   `;
   db.query(sql, (err, results) => {
-    if (err) throw err;
+    if (err) {
+      console.error('Error fetching blogs:', err);
+      return res.status(500).json({ message: 'Error fetching blogs' });
+    }
     res.json(results);
   });
 });
 
+
+// Create a new blog post (no location required)
 app.post('/blogs', verifyToken, isMember, upload.single('image'), (req, res) => {
-  
-  const { title, content, location, location_type } = req.body;
-    const authorId = req.userId;
-    const imageUrl = req.file ? `http://localhost:5000/uploads/${req.file.filename}` : null;
-
-
+  const { title, content } = req.body;
+  const authorId = req.userId;
+  const imageUrl = req.file ? `http://localhost:5000/uploads/${req.file.filename}` : null;
 
   // Check if the user is authenticated
   if (!authorId) {
@@ -326,19 +325,11 @@ app.post('/blogs', verifyToken, isMember, upload.single('image'), (req, res) => 
     return res.status(400).json({ message: 'Title and content are required' });
   }
 
-  if (!location) {
-    return res.status(400).json({ message: 'Location is required' });
-  }
-
-  if (!location_type) { // Check for location type
-    return res.status(400).json({ message: 'Location type is required' });
-  }
-
   // SQL statement for inserting blog post
-  const sql = 'INSERT INTO blog_posts (title, content, author_id, location, location_type, image_url) VALUES (?, ?, ?, ?, ?, ?)';
+  const sql = 'INSERT INTO blog_posts (title, content, author_id, image_url) VALUES (?, ?, ?, ?)';
 
   // Execute the SQL query
-  db.query(sql, [title, content, authorId, location, location_type, imageUrl], (err, result) => {
+  db.query(sql, [title, content, authorId, imageUrl], (err, result) => {
     if (err) return res.status(500).json({ message: 'Error submitting blog post' });
 
     // Respond with the newly created blog post details
@@ -346,85 +337,46 @@ app.post('/blogs', verifyToken, isMember, upload.single('image'), (req, res) => 
       id: result.insertId,
       title,
       content,
-      location,
-      location_type,
       author_id: authorId,
       image_url: imageUrl
     });
   });
 });
 
+// Toggle like functionality for a blog post
 app.post('/blogs/:id/like', verifyToken, isMember, (req, res) => {
   const postId = req.params.id;
-  const userId = req.userId;
+  const userId = req.userId; // Extracted from the token
 
-  // Check if the user has already liked or disliked this post
-  const checkSql = 'SELECT liked FROM likes_dislikes WHERE post_id = ? AND user_id = ?';
-  db.query(checkSql, [postId, userId], (err, result) => {
-    if (err) return res.status(500).json({ message: 'Error checking like status' });
+  const sql = `
+    INSERT INTO likes_dislikes (post_id, user_id, liked)
+    VALUES (?, ?, true)
+    ON DUPLICATE KEY UPDATE liked = NOT liked;
+  `;
 
-    if (result.length > 0) {
-      if (result[0].liked === true) {
-        // User already liked the post, remove like
-        const deleteSql = 'DELETE FROM likes_dislikes WHERE post_id = ? AND user_id = ?';
-        db.query(deleteSql, [postId, userId], (err) => {
-          if (err) return res.status(500).json({ message: 'Error removing like' });
-          return res.json({ message: 'Like removed' });
-        });
-      } else {
-        // User had disliked, change to like
-        const updateSql = 'UPDATE likes_dislikes SET liked = true WHERE post_id = ? AND user_id = ?';
-        db.query(updateSql, [postId, userId], (err) => {
-          if (err) return res.status(500).json({ message: 'Error updating like' });
-          return res.json({ message: 'Post liked' });
-        });
-      }
-    } else {
-      // Add a new like
-      const insertSql = 'INSERT INTO likes_dislikes (post_id, user_id, liked) VALUES (?, ?, true)';
-      db.query(insertSql, [postId, userId], (err) => {
-        if (err) return res.status(500).json({ message: 'Error liking post' });
-        return res.json({ message: 'Post liked' });
-      });
+  db.query(sql, [postId, userId], (err) => {
+    if (err) {
+      console.error('Error updating like status:', err);
+      return res.status(500).json({ message: 'Error updating like status' });
     }
+
+    const getLikesQuery = `
+      SELECT COUNT(*) AS likes_count
+      FROM likes_dislikes
+      WHERE post_id = ? AND liked = true;
+    `;
+
+    db.query(getLikesQuery, [postId], (err, result) => {
+      if (err) {
+        console.error('Error fetching likes:', err);
+        return res.status(500).json({ message: 'Error fetching likes' });
+      }
+
+      res.json({ likes_count: result[0].likes_count });
+    });
   });
 });
 
-app.post('/blogs/:id/dislike', verifyToken, isMember, (req, res) => {
-  const postId = req.params.id;
-  const userId = req.userId;
-
-  // Check if the user has already liked or disliked this post
-  const checkSql = 'SELECT liked FROM likes_dislikes WHERE post_id = ? AND user_id = ?';
-  db.query(checkSql, [postId, userId], (err, result) => {
-    if (err) return res.status(500).json({ message: 'Error checking dislike status' });
-
-    if (result.length > 0) {
-      if (result[0].liked === false) {
-        // User already disliked the post, remove dislike
-        const deleteSql = 'DELETE FROM likes_dislikes WHERE post_id = ? AND user_id = ?';
-        db.query(deleteSql, [postId, userId], (err) => {
-          if (err) return res.status(500).json({ message: 'Error removing dislike' });
-          return res.json({ message: 'Dislike removed' });
-        });
-      } else {
-        // User had liked, change to dislike
-        const updateSql = 'UPDATE likes_dislikes SET liked = false WHERE post_id = ? AND user_id = ?';
-        db.query(updateSql, [postId, userId], (err) => {
-          if (err) return res.status(500).json({ message: 'Error updating dislike' });
-          return res.json({ message: 'Post disliked' });
-        });
-      }
-    } else {
-      // Add a new dislike
-      const insertSql = 'INSERT INTO likes_dislikes (post_id, user_id, liked) VALUES (?, ?, false)';
-      db.query(insertSql, [postId, userId], (err) => {
-        if (err) return res.status(500).json({ message: 'Error disliking post' });
-        return res.json({ message: 'Post disliked' });
-      });
-    }
-  });
-});
 
 // Fetch comments for a specific blog post
 app.get('/blogs/:id/comments', (req, res) => {
@@ -443,7 +395,7 @@ app.get('/blogs/:id/comments', (req, res) => {
   });
 });
 
-
+// Submit a comment for a blog post
 app.post('/blogs/:id/comments', verifyToken, (req, res) => {
   const postId = req.params.id;
   const comment = req.body.comment;
@@ -468,48 +420,60 @@ app.post('/blogs/:id/comments', verifyToken, (req, res) => {
   });
 });
 
+// Fetch total likes for a specific blog post
+app.get('/blogs/:id/likes', (req, res) => {
+  const postId = req.params.id;
 
+  const sqlFetchLikes = `
+    SELECT COUNT(*) AS like_count
+    FROM likes_dislikes
+    WHERE post_id = ? AND liked = true
+  `;
+  db.query(sqlFetchLikes, [postId], (err, result) => {
+    if (err) return res.status(500).json({ message: 'Error fetching likes count' });
+
+    res.json(result[0]); // Return the like count
+  });
+});
 
 app.post('/signup', async (req, res) => {
   const { username, password, email, userType = 'member' } = req.body;
-  
+
   // Email validation regex
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!emailRegex.test(email)) {
-      return res.status(400).json({ message: 'Invalid email format' });
+    return res.status(400).json({ message: 'Invalid email format' });
   }
 
   const hashedPassword = await bcrypt.hash(password, 10);
 
   // Restrict 'admin' role creation
   if (userType === 'admin') {
-      return res.status(403).json({ message: 'Cannot create admin accounts via signup' });
+    return res.status(403).json({ message: 'Cannot create admin accounts via signup' });
   }
 
   // Check if email already exists
   const checkEmailSql = 'SELECT * FROM users WHERE email = ?';
   db.query(checkEmailSql, [email], async (err, results) => {
-      if (err) {
-          return res.status(500).json({ message: 'Error checking email' });
-      }
-      if (results.length > 0) {
-          return res.status(400).json({ message: 'Email already in use' });
-      }
+    if (err) {
+      return res.status(500).json({ message: 'Error checking email' });
+    }
+    if (results.length > 0) {
+      return res.status(400).json({ message: 'Email already in use' });
+    }
 
-      // Proceed with creating the user
-      const sql = 'INSERT INTO users (username, password, email, user_type) VALUES (?, ?, ?, ?)';
-      db.query(sql, [username, hashedPassword, email, userType], (err, result) => {
-          if (err) {
-              res.status(500).json({ message: 'Error creating user' });
-          } else {
-              res.status(201).json({ message: 'User created successfully' });
-          }
-      });
+    // Proceed with creating the user
+    const sql = 'INSERT INTO users (username, password, email, user_type) VALUES (?, ?, ?, ?)';
+    db.query(sql, [username, hashedPassword, email, userType], (err, result) => {
+      if (err) {
+        res.status(500).json({ message: 'Error creating user' });
+      } else {
+        res.status(201).json({ message: 'User created successfully' });
+      }
+    });
   });
 });
 
-
-  
 // Updated Login with JWT
 app.post('/login', (req, res) => {
   const { email, password } = req.body;
@@ -537,45 +501,77 @@ app.post('/login', (req, res) => {
   });
 });
 
-// Get all reviews by the logged-in user
+// Get all reviews by the logged-in user 
 app.get('/manage/reviews', verifyToken, (req, res) => {
   const userId = req.userId; // Assuming user ID is available after token verification
-  db.query('SELECT * FROM reviews WHERE writer_id = ?', [userId], (err, results) => {
+
+  const sql = `
+    SELECT reviews.*, 
+           locations.name AS location_name, 
+           locations.address AS location_address
+    FROM reviews
+    LEFT JOIN locations ON reviews.location_id = locations.id
+    WHERE reviews.writer_id = ?
+  `;
+
+  db.query(sql, [userId], (err, results) => {
     if (err) return res.status(500).json({ message: 'Error fetching reviews' });
     res.json(results);
   });
 });
 
-// Get all comments by the logged-in user
+
+// Get all comments by the logged-in user with their associated review post
 app.get('/manage/comments', verifyToken, (req, res) => {
   const userId = req.userId;
-  db.query('SELECT * FROM review_comments WHERE user_id = ?', [userId], (err, results) => {
+
+  const sql = `
+    SELECT review_comments.*, 
+           reviews.review_text AS review_post 
+    FROM review_comments
+    LEFT JOIN reviews ON review_comments.review_id = reviews.id
+    WHERE review_comments.user_id = ?
+  `;
+
+  db.query(sql, [userId], (err, results) => {
     if (err) return res.status(500).json({ message: 'Error fetching comments' });
     res.json(results);
   });
 });
 
+
 // Update a review
 app.put('/reviews/:id', verifyToken, upload.single('image'), (req, res) => {
   const reviewId = req.params.id;
-  const { review_text, rating, delete_image } = req.body; // Add delete_image to body
-  const imageUrl = req.file ? `http://localhost:5000/uploads/${req.file.filename}` : null; // New image URL if an image is uploaded
+  const { review_text, rating, location_id, delete_image } = req.body;
+  const imageUrl = req.file ? `http://localhost:5000/uploads/${req.file.filename}` : null;
 
-  // SQL statement for updating the review
-  const sql = 'UPDATE reviews SET review_text = ?, rating = ?, image_url = ? WHERE id = ? AND writer_id = ?';
-  
-  // Determine the final image URL
+  if (!location_id) {
+    return res.status(400).json({ message: 'Location ID is required.' });
+  }
+
+  const sql = `
+    UPDATE reviews 
+    SET review_text = ?, rating = ?, location_id = ?, 
+        image_url = COALESCE(?, image_url) 
+    WHERE id = ? AND writer_id = ?
+  `;
+
   const finalImageUrl = delete_image === 'true' ? null : imageUrl;
 
-  db.query(sql, [review_text, rating, finalImageUrl, reviewId, req.userId], (err) => {
-    if (err) {
-      console.error('Error updating review:', err);
-      return res.status(500).json({ message: 'Error updating review' });
+  db.query(
+    sql,
+    [review_text, rating, location_id, finalImageUrl, reviewId, req.userId],
+    (err) => {
+      if (err) {
+        console.error('Error updating review:', err);
+        return res.status(500).json({ message: 'Error updating review' });
+      }
+      res.json({ message: 'Review updated successfully' });
     }
-    
-    res.json({ message: 'Review updated successfully' });
-  });
+  );
 });
+
 
 // Delete a review
 app.delete('/reviews/:id', verifyToken, (req, res) => {
@@ -590,7 +586,7 @@ app.delete('/reviews/:id', verifyToken, (req, res) => {
 app.put('/comments/:id', verifyToken, (req, res) => {
   const commentId = req.params.id;
   const { comment } = req.body;
-  db.query('UPDATE review_comments SET comment = ? WHERE id = ? AND user_id = ?', 
+  db.query('UPDATE review_comments SET comment = ? WHERE id = ? AND user_id = ?',
     [comment, commentId, req.userId], (err) => {
       if (err) return res.status(500).json({ message: 'Error updating comment' });
       res.json({ message: 'Comment updated successfully' });
@@ -606,6 +602,7 @@ app.delete('/comments/:id', verifyToken, (req, res) => {
   });
 });
 
+// Get all blogs by the logged-in user
 app.get('/manage/blogs', verifyToken, (req, res) => {
   const userId = req.userId; // Assuming user ID is available after token verification
   db.query('SELECT * FROM blog_posts WHERE author_id = ?', [userId], (err, results) => {
@@ -614,87 +611,97 @@ app.get('/manage/blogs', verifyToken, (req, res) => {
   });
 });
 
-// Get all comments by the logged-in user
+// Get all comments by the logged-in user for blogs, including blog titles
 app.get('/manage/blog-comments', verifyToken, (req, res) => {
   const userId = req.userId;
-  db.query('SELECT * FROM comments WHERE user_id = ?', [userId], (err, results) => {
-    if (err) return res.status(500).json({ message: 'Error fetching blog comments' });
+  const query = `
+    SELECT comments.id, comments.comment, comments.post_id, blog_posts.title AS blog_title 
+    FROM comments 
+    JOIN blog_posts ON comments.post_id = blog_posts.id 
+    WHERE comments.user_id = ?`;
+
+  db.query(query, [userId], (err, results) => {
+    if (err) {
+      console.error('Error fetching blog comments:', err);
+      return res.status(500).json({ message: 'Error fetching blog comments' });
+    }
     res.json(results);
   });
 });
 
+
+
 // Update a blog
 app.put('/blogs/:id', verifyToken, upload.single('image'), (req, res) => {
   const blogId = req.params.id;
-  const { content, title, delete_image } = req.body; // Add delete_image to body
-  const imageUrl = req.file ? `http://localhost:5000/uploads/${req.file.filename}` : null; // New image URL if an image is uploaded
+  const { content, title, delete_image } = req.body;
+  const imageUrl = req.file ? `http://localhost:5000/uploads/${req.file.filename}` : null;
 
-  // SQL statement for updating the review
-  const sql = 'UPDATE blog_posts SET content = ?, title = ?, image_url = ? WHERE id = ? AND author_id = ?';
-  
-  // Determine the final image URL
   const finalImageUrl = delete_image === 'true' ? null : imageUrl;
+
+  const sql = `
+    UPDATE blog_posts 
+    SET content = ?, title = ?, image_url = COALESCE(?, image_url) 
+    WHERE id = ? AND author_id = ?
+  `;
 
   db.query(sql, [content, title, finalImageUrl, blogId, req.userId], (err) => {
     if (err) {
       console.error('Error updating blog:', err);
       return res.status(500).json({ message: 'Error updating blog' });
     }
-    
     res.json({ message: 'Blog updated successfully' });
   });
 });
+
 
 // Delete a blog
 app.delete('/blogs/:id', verifyToken, (req, res) => {
   const blogID = req.params.id;
   db.query('DELETE FROM blog_posts WHERE id = ? AND author_id = ?', [blogID, req.userId], (err) => {
-    if (err) return res.status(500).json({ message: 'Error deleting review' });
+    if (err) return res.status(500).json({ message: 'Error deleting blog' });
     res.json({ message: 'Blog deleted successfully' });
   });
 });
 
-// Update a comment
+// Update a blog comment
 app.put('/blog-comments/:id', verifyToken, (req, res) => {
   const blogcommentId = req.params.id;
   const { comment } = req.body;
-  db.query('UPDATE comments SET comment = ? WHERE id = ? AND user_id = ?', 
+  db.query('UPDATE comments SET comment = ? WHERE id = ? AND user_id = ?',
     [comment, blogcommentId, req.userId], (err) => {
       if (err) return res.status(500).json({ message: 'Error updating blog comment' });
       res.json({ message: 'Blog comment updated successfully' });
     });
 });
 
-// Delete a comment
+// Delete a blog comment
 app.delete('/blog-comments/:id', verifyToken, (req, res) => {
   const blogcommentId = req.params.id;
   db.query('DELETE FROM comments WHERE id = ? AND user_id = ?', [blogcommentId, req.userId], (err) => {
     if (err) return res.status(500).json({ message: 'Error deleting blog comment' });
-    res.json({ message: 'Clog comment deleted successfully' });
+    res.json({ message: 'Blog comment deleted successfully' });
   });
 });
 
 app.get('/map/reviews', (req, res) => {
-  const { location } = req.query;
+  const { name } = req.query; // Remove address from query parameters
 
-  let sql = `
-    SELECT reviews.id, reviews.rating, reviews.review_text, users.username, reviews.location, reviews.type, reviews.created_at, reviews.image_url, avg_reviews.avg_rating
-    FROM reviews
-    LEFT JOIN users ON reviews.writer_id = users.id
-    LEFT JOIN (
-      SELECT location, AVG(rating) AS avg_rating
-      FROM reviews
-      GROUP BY location
-    ) AS avg_reviews ON reviews.location = avg_reviews.location
-    WHERE reviews.location = ?
-  `;
-  const params = [];
+  console.log('Received name:', name);
 
-  if (location) {
-    params.push(location);
+  if (!name) {
+    return res.status(400).json({ message: 'Location name is required' });
   }
 
-  db.query(sql, params, (err, results) => {
+  const sql = `
+    SELECT reviews.*, users.username 
+    FROM reviews
+    JOIN locations ON reviews.location_id = locations.id
+    JOIN users ON reviews.writer_id = users.id
+    WHERE locations.name = ?
+  `;
+
+  db.query(sql, [name], (err, results) => {
     if (err) {
       console.error('Error fetching reviews:', err);
       return res.status(500).json({ message: 'Error fetching reviews' });
@@ -704,19 +711,55 @@ app.get('/map/reviews', (req, res) => {
 });
 
 
+
+
+
+
 // Add a favorite location
 app.post('/favorites', verifyToken, (req, res) => {
-  const userId = req.userId; // From the token
-  const { name, address } = req.body;
+  const userId = req.userId; // Extracted from the token
+  const { name, address } = req.body; // Get name and address from request
 
-  const sql = 'INSERT INTO favorites (user_id, name, address) VALUES (?, ?, ?)';
-  db.query(sql, [userId, name, address], (err, result) => {
+  const findLocationSQL = 'SELECT id FROM locations WHERE name = ? AND address = ?';
+  db.query(findLocationSQL, [name, address], (err, results) => {
     if (err) {
-      return res.status(500).json({ message: 'Error adding favorite' });
+      console.error('Error finding location:', err);
+      return res.status(500).json({ message: 'Error finding location' });
     }
-    res.status(201).json({ id: result.insertId, name, address });
+
+    if (results.length > 0) {
+      // Location exists, use its ID
+      const locationId = results[0].id;
+      addFavorite(userId, locationId, res);
+    } else {
+      // Location does not exist, insert it
+      const insertLocationSQL = 'INSERT INTO locations (name, address) VALUES (?, ?)';
+      db.query(insertLocationSQL, [name, address], (err, result) => {
+        if (err) {
+          console.error('Error inserting location:', err);
+          return res.status(500).json({ message: 'Error inserting location' });
+        }
+        const locationId = result.insertId;
+        addFavorite(userId, locationId, res);
+      });
+    }
   });
 });
+
+// Helper function to insert favorite
+const addFavorite = (userId, locationId, res) => {
+  const sql = 'INSERT INTO favorites (user_id, location_id) VALUES (?, ?)';
+  db.query(sql, [userId, locationId], (err, result) => {
+    if (err) {
+      console.error('Error adding favorite:', err);
+      return res.status(500).json({ message: 'Error adding favorite' });
+    }
+    res.status(201).json({ id: result.insertId, locationId });
+  });
+};
+
+
+
 
 
 
@@ -724,14 +767,24 @@ app.post('/favorites', verifyToken, (req, res) => {
 app.get('/favorites', verifyToken, (req, res) => {
   const userId = req.userId;
 
-  const sql = 'SELECT * FROM favorites WHERE user_id = ?';
+  const sql = `
+    SELECT f.id, l.name, l.address
+    FROM favorites f
+    JOIN locations l ON f.location_id = l.id
+    WHERE f.user_id = ?
+  `;
+
   db.query(sql, [userId], (err, results) => {
     if (err) {
+      console.error('Error fetching favorites:', err);
       return res.status(500).json({ message: 'Error fetching favorites' });
     }
     res.json(results);
   });
 });
+
+
+
 
 
 // Delete a favorite location
@@ -742,11 +795,17 @@ app.delete('/favorites/:id', verifyToken, (req, res) => {
   const sql = 'DELETE FROM favorites WHERE id = ? AND user_id = ?';
   db.query(sql, [favoriteId, userId], (err, result) => {
     if (err) {
+      console.error('Error deleting favorite:', err);
       return res.status(500).json({ message: 'Error deleting favorite' });
     }
-    res.status(204).send(); // No content
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: 'Favorite not found' });
+    }
+    res.status(204).send(); // No content on successful deletion
   });
 });
+
+
 
 
 
@@ -756,10 +815,10 @@ app.delete('/favorites/:id', verifyToken, (req, res) => {
 app.get('/users/me', verifyToken, (req, res) => {
   // Access the user ID from the token
   const userId = req.userId; // Make sure your verifyToken middleware sets req.user
-  
+
   // SQL query to fetch user details
   const sql = 'SELECT id, username, email FROM users WHERE id = ?';
-  
+
   db.query(sql, [userId], (err, results) => {
     if (err) {
       return res.status(500).json({ message: 'Error fetching user info' });

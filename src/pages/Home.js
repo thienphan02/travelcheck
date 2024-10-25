@@ -1,11 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { Autocomplete, useLoadScript, InfoWindow } from '@react-google-maps/api';
 import Modal from './Modal';
+import Carousel from 'react-multi-carousel';
+import 'react-multi-carousel/lib/styles.css';
 import '../styles/style.css';
+import { FaHeart, FaRegHeart } from 'react-icons/fa';
 
 const LIBRARIES = ['places'];
 
+const getResponsiveConfig = (placesCount) => ({
+  desktop: { breakpoint: { max: 3000, min: 1024 }, items: Math.min(placesCount, 4), slidesToSlide: 1 },
+  tablet: { breakpoint: { max: 1024, min: 464 }, items: Math.min(placesCount, 2), slidesToSlide: 1 },
+  mobile: { breakpoint: { max: 320, min: 0 }, items: Math.min(placesCount, 1), slidesToSlide: 1 },
+});
+
 const Home = () => {
+  const [carouselIndexes, setCarouselIndexes] = useState({});
+  const [favorites, setFavorites] = useState([]);
   const [token, setToken] = useState(null); // State to store the token
   const [center, setCenter] = useState({ lat: 0, lng: 0 });
   const [reviews, setReviews] = useState([]); // State to store reviews
@@ -31,20 +42,39 @@ const Home = () => {
     libraries: LIBRARIES,
   });
 
+  const isFavorite = (placeId) => favorites.includes(placeId);
+
   useEffect(() => {
     const storedToken = localStorage.getItem('token');
     setToken(storedToken);
 
-  },[]);
+  }, []);
 
-  const fetchReviews = async (placeId) => {
+  const handlePlaceClick = async (place) => {
+
     try {
-      const response = await fetch(`http://localhost:5000/map/reviews?location=${placeId}`);
-      if (!response.ok) {
-        throw new Error('Network response was not ok ' + response.statusText);
-      }
+      await fetchReviews(place); // Fetch reviews before opening the modal
+      setSelectedPlace(place); // Open the modal
+    } catch (error) {
+      console.error('Error handling place click:', error);
+    }
+  };
+
+
+
+  const fetchReviews = async (place) => {
+    try {
+      console.log('Fetching reviews for:', place.name);
+
+      const response = await fetch(
+        `http://localhost:5000/map/reviews?name=${encodeURIComponent(place.name)}`
+      );
+
+      if (!response.ok) throw new Error('Network response was not ok');
+
       const data = await response.json();
-      setReviews(data); // Set reviews in state
+      console.log('Fetched reviews:', data);
+      setReviews(data); // Update state with fetched reviews
     } catch (error) {
       console.error('Error fetching reviews:', error);
     }
@@ -135,39 +165,25 @@ const Home = () => {
         setCenter(newLocationCoords);
         setIsChangingLocation(false);
         setLocationInput('');
-  
+
         // Update the search options based on the new location
         const newSearchOptions = {
           location: new window.google.maps.LatLng(newLocationCoords.lat, newLocationCoords.lng),
           radius: 5000,
         };
         setSearchOptions(newSearchOptions);
-  
+
         // Update the autocomplete options with the new location
         if (autocompleteSearch) {
           autocompleteSearch.setOptions(newSearchOptions);
         }
-  
+
         // Fetch all recommended places based on the new location
         fetchAllRecommendedPlaces(newLocationCoords.lat, newLocationCoords.lng);
       }
     }
   };
-  
-  const onSearchPlaceChanged = () => {
-    if (autocompleteSearch) {
-      const place = autocompleteSearch.getPlace();
-      if (place.geometry) {
-        setSelectedPlace(place);
-        setCenter({
-          lat: place.geometry.location.lat(),
-          lng: place.geometry.location.lng(),
-        });
-        fetchReviews(place.name); // Fetch reviews for the selected place
-      }
-    }
-  };
-  
+
 
   const handleChangeLocation = () => {
     setIsChangingLocation(true);
@@ -181,9 +197,7 @@ const Home = () => {
       alert('You must be logged in to add favorites.');
       return;
     }
-  
-    console.log("Token:", token); // Log the token for debugging
-  
+
     try {
       const response = await fetch('http://localhost:5000/favorites', {
         method: 'POST',
@@ -193,10 +207,10 @@ const Home = () => {
         },
         body: JSON.stringify({
           name: place.name,
-          address: place.vicinity || place.formatted_address,
+          address: place.vicinity || place.formatted_address, // Use address from place data
         }),
       });
-  
+
       if (response.ok) {
         alert('Added to favorites!');
       } else {
@@ -207,22 +221,29 @@ const Home = () => {
       console.error('Error adding to favorites:', error);
       alert('Failed to add to favorites.');
     }
-  };
-  
-  
-  const autocompleteSearchOptions = {
-    ...searchOptions, // Ensure it includes the updated location and radius
-    types: ['establishment'], // Optionally filter types if needed
+    if (isFavorite(place.place_id)) {
+      setFavorites(favorites.filter((id) => id !== place.place_id)); // Remove from favorites
+    } else {
+      setFavorites([...favorites, place.place_id]); // Add to favorites
+    }
   };
 
+  const updateCarouselIndex = (category, newIndex) => {
+    setCarouselIndexes((prev) => ({ ...prev, [category]: newIndex }));
+  };
+
+  const isLastSlide = (category, places) => {
+    const currentIndex = carouselIndexes[category] || 0;
+    const itemsPerSlide = getResponsiveConfig(places.length).desktop.items;
+    return currentIndex >= places.length - itemsPerSlide;
+  };
 
   if (loadError) return <div>Error</div>;
   if (!isLoaded) return <div>Loading...</div>;
 
   return (
     <div className="home-container">
-      <h1>Welcome to Travel Reviews</h1>
-      <p>Discover the best places to visit, eat, and stay!</p>
+      <h1>Discover the best places to visit, eat, and stay!</h1>
       <div className="location-display">
         <strong>Current Location: </strong>
         {isChangingLocation ? (
@@ -247,49 +268,83 @@ const Home = () => {
 
       {/* Category Sections */}
       <div className="category-container">
-  <h2>Recommended Places</h2>
-  {Object.entries(recommendedPlaces).map(([category, places]) => (
-    <div key={category} className="category-section">
-      <h3>{category.charAt(0).toUpperCase() + category.slice(1).replace(/_/g, ' ')}</h3>
-      {places.length > 0 ? (
-        <ul>
-          {places.map((place) => (
-            <li key={place.place_id} onClick={() => {
-              setSelectedPlace(place);
-              fetchReviews(place.name); // Fetch reviews for the selected place
-            }} style={{ cursor: 'pointer' }}>
-              <h4>{place.name}</h4>
-              <p>{place.vicinity}</p>
-              <button onClick={() => handleAddToFavorites(place)}>Add to Favorites</button>
-              {place.photos && place.photos.length > 0 && (
-                <img
-                  src={place.photos[0].getUrl({ maxWidth: 200 })}
-                  alt={place.name}
-                  style={{ width: '100%', height: 'auto' }}
-                />
-              )}
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <p>No recommendations available.</p>
+        {Object.entries(recommendedPlaces).map(([category, places]) => (
+
+          <div key={category} className="category-section">
+            <h3>{category.charAt(0).toUpperCase() + category.slice(1).replace(/_/g, ' ')}</h3>
+            {places.length > 0 ? (
+              <ul>
+                <Carousel
+                  responsive={getResponsiveConfig(places.length)}
+                  partialVisible
+                  arrows={!isLastSlide(category, places)}
+                  afterChange={(previousSlide) => updateCarouselIndex(category, previousSlide)}
+                  className="carousel-container"
+                >
+                  {places.map((place) => (
+                    <li
+                      key={place.place_id}
+                      className="carousel-item"
+                      onClick={() => handlePlaceClick(place)} // Call handlePlaceClick here
+                      style={{ cursor: 'pointer' }}
+                    >
+                      <h4 className="place-name">{place.name}</h4>
+                      <p className="place-address">{place.vicinity}</p>
+                      <div
+                        className="favorite-icon"
+                        onClick={(e) => {
+                          e.stopPropagation(); // Prevent triggering the modal
+                          handleAddToFavorites(place);
+                        }}
+                      >
+                        {isFavorite(place.place_id) ? (
+                          <FaHeart className="filled-heart" />
+                        ) : (
+                          <FaRegHeart className="outlined-heart" />
+                        )}
+                      </div>
+                      {place.photos?.length > 0 ? (
+                        <img
+                          src={place.photos[0].getUrl({ maxWidth: 200 })}
+                          alt={place.name}
+                        />
+                      ) : (
+                        <img
+                          src="https://via.placeholder.com/250x150?text=No+Image"
+                          alt="No Image Available"
+                        />
+                      )}
+                    </li>
+                  ))}
+                </Carousel>
+              </ul>
+            ) : (
+              <p>No recommendations available.</p>
+            )}
+
+          </div>
+
+        ))}
+      </div>
+      {selectedPlace && selectedPlace.geometry && (
+        <Modal
+          place={selectedPlace}
+          reviews={reviews}
+          onClose={() => {
+            setSelectedPlace(null);
+            setReviews([]); // Clear reviews when modal closes
+          }}
+          token={token} // Pass the token here
+        />
       )}
-    </div>
-  ))}
-</div>
-
-
-{selectedPlace && selectedPlace.geometry && (
-  <Modal
-    place={selectedPlace}
-    reviews={reviews}
-    onClose={() => setSelectedPlace(null)}
-    token={token} // Pass the token here
-  />
-)}
-
+      <div class="background-shapes">
+        <div class="shape-1"></div>
+        <div class="shape-2"></div>
+        <div class="shape-3"></div>
+      </div>
 
     </div>
+
   );
 };
 

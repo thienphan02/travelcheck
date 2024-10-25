@@ -28,14 +28,12 @@ const MapPage = () => {
     libraries: LIBRARIES,
   });
 
-  const fetchReviews = async (location) => {
+  const fetchReviews = async (placeName) => {
     try {
-      const response = await fetch(`http://localhost:5000/map/reviews?location=${location}`);
-
-      // Check if the response is OK (status in the range 200-299)
-      if (!response.ok) {
-        throw new Error('Network response was not ok ' + response.statusText);
-      }
+      const response = await fetch(
+        `http://localhost:5000/map/reviews?name=${encodeURIComponent(placeName)}`
+      );
+      if (!response.ok) throw new Error('Failed to fetch reviews');
 
       const data = await response.json();
       setReviews(data);
@@ -49,8 +47,8 @@ const MapPage = () => {
       alert('Please select a place to add to favorites.');
       return;
     }
-
-    const { name, formatted_address } = selectedPlace;
+  
+    const { place_id, name, formatted_address } = selectedPlace; // Use place_id from selectedPlace
     
     try {
       const response = await fetch('http://localhost:5000/favorites', {
@@ -60,15 +58,16 @@ const MapPage = () => {
           'Authorization': `Bearer ${localStorage.getItem('token')}`, // Assuming you're storing the token in localStorage
         },
         body: JSON.stringify({
+          placeId: place_id, // Updated to send place_id
           name,
           address: formatted_address,
         }),
       });
-
+  
       if (!response.ok) {
         throw new Error('Failed to add to favorites: ' + response.statusText);
       }
-
+  
       const data = await response.json();
       alert(`Added to favorites`);
     } catch (error) {
@@ -97,7 +96,10 @@ const MapPage = () => {
     handleGeolocation();
   }, []);
 
-
+  const handleMarkerClick = (marker) => {
+    setSelectedPlace(marker); // Set selected place
+    fetchReviews(marker.name); // Fetch reviews based on place name
+  };
 
   // Handle both text and nearby search
   const onSearch = () => {
@@ -351,12 +353,6 @@ const MapPage = () => {
             onCloseClick={() => setSelectedPlace(null)}
           >
             <div>
-              {/* <button className="close-button" onClick={onClose}>X</button>
-              <h2>{place.name}</h2>
-              <p>{place.formatted_address}</p>
-              <button onClick={handleFavorite}>
-                {isFavorited ? 'Remove from Favorites' : 'Add to Favorites'}
-              </button> */}
                       <button onClick={handleAddToFavorites}>Add to Favorites</button>
 
               <h2>{selectedPlace.name}</h2>

@@ -2,39 +2,34 @@ import React, { useEffect, useState } from 'react';
 
 const FavoritesPage = () => {
   const [favorites, setFavorites] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
 
+  // Fetch favorites when the page loads
   useEffect(() => {
-    const fetchFavorites = async () => {
-      const token = localStorage.getItem('token');
-      try {
-        const response = await fetch('http://localhost:5000/favorites', {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        if (!response.ok) {
-          throw new Error('Failed to fetch favorites');
-        }
-
-        const data = await response.json();
-        setFavorites(data);
-      } catch (error) {
-        setError(error.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchFavorites();
   }, []);
 
-  const handleDeleteFavorite = async (id) => {
-    const token = localStorage.getItem('token');
+  const fetchFavorites = async () => {
     try {
-      const response = await fetch(`http://localhost:5000/favorites/${id}`, {
+      const token = localStorage.getItem('token');
+      const response = await fetch('http://localhost:5000/favorites', {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) throw new Error('Failed to fetch favorites');
+      const data = await response.json();
+      setFavorites(data);
+    } catch (error) {
+      console.error('Error fetching favorites:', error);
+    }
+  };
+
+  // Handle deleting a favorite
+  const handleDeleteFavorite = async (favoriteId) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`http://localhost:5000/favorites/${favoriteId}`, {
         method: 'DELETE',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -42,10 +37,11 @@ const FavoritesPage = () => {
       });
 
       if (response.ok) {
-        setFavorites((prev) => prev.filter((fav) => fav.id !== id));
+        // Remove the deleted favorite from the state
+        setFavorites(favorites.filter((favorite) => favorite.id !== favoriteId));
       } else {
-        const errorData = await response.json();
-        alert(`Error: ${errorData.message}`);
+        console.error('Failed to delete favorite');
+        alert('Error deleting favorite.');
       }
     } catch (error) {
       console.error('Error deleting favorite:', error);
@@ -53,25 +49,22 @@ const FavoritesPage = () => {
     }
   };
 
-  if (loading) return <div>Loading favorites...</div>;
-  if (error) return <div>Error: {error}</div>;
-
   return (
     <div>
       <h1>Your Favorite Locations</h1>
-      {favorites.length > 0 ? (
-        <ul>
-          {favorites.map((fav) => (
-            <li key={fav.id}>
-              <h4>{fav.name}</h4>
-              <p>{fav.address}</p>
-              <button onClick={() => handleDeleteFavorite(fav.id)}>Delete</button>
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <p>No favorites found.</p>
-      )}
+      <ul>
+        {favorites.map((favorite) => (
+          <li key={favorite.id} style={{ display: 'flex', alignItems: 'center' }}>
+            <div style={{ flexGrow: 1 }}>
+              <h2>{favorite.name}</h2>
+              <p>{favorite.address}</p>
+            </div>
+            <button onClick={() => handleDeleteFavorite(favorite.id)}>
+              Delete
+            </button>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 };

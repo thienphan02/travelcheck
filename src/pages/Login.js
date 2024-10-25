@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect  } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import '../styles/style.css';
 
@@ -8,6 +8,13 @@ const LoginPage = () => {
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
+
+    useEffect(() => {
+        document.body.classList.add('auth-body');
+        return () => {
+            document.body.classList.remove('auth-body'); // Clean up on unmount
+        };
+    }, []);
 
     const handleSubmit = async (e) => {
         e.preventDefault();

@@ -17,6 +17,8 @@ const ManagePost = () => {
   const [editReviewRating, setEditReviewRating] = useState(0);
   const [editBlogTitle, setEditBlogTitle] = useState('');
   const [editImageURL, setEditImageURL] = useState('');
+  const [locationId, setLocationId] = useState(null);
+
 
   useEffect(() => {
     const fetchData = async () => {
@@ -91,6 +93,7 @@ const ManagePost = () => {
     setEditReviewText(review.review_text);
     setEditReviewRating(review.rating); // Set the current rating
     setEditImageURL(review.image_url); // Set the current image URL
+    setLocationId(review.location_id);
   };
 
 
@@ -132,34 +135,54 @@ const ManagePost = () => {
 
   const handleUpdateReview = async (e) => {
     e.preventDefault();
+    if (!locationId) {
+      alert("Location ID is required.");
+      return;
+    }
+  
     const formData = new FormData();
     formData.append('review_text', editReviewText);
     formData.append('rating', editReviewRating);
-    formData.append('delete_image', editImageURL ? 'false' : 'true'); // Set delete_image based on the presence of the image
-    if (editImageURL) {
-      formData.append('image', editImageURL); // Append new image if provided
+    formData.append('location_id', locationId); // Ensure it's captured and sent
+  
+    if (editImageURL instanceof File) {
+      formData.append('image', editImageURL);
+    } else if (editImageURL === null) {
+      formData.append('delete_image', 'true');
     }
   
-    await fetch(`http://localhost:5000/reviews/${editReviewId}`, {
-      method: 'PUT',
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem('token')}`,
-      },
-      body: formData, // Use FormData for multipart/form-data
-    });
+    try {
+      const response = await fetch(`http://localhost:5000/reviews/${editReviewId}`, {
+        method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+        },
+        body: formData,
+      });
   
-    setReviews((prev) =>
-      prev.map((review) =>
-        review.id === editReviewId
-          ? { ...review, review_text: editReviewText, rating: editReviewRating, image_url: editImageURL }
-          : review
-      )
-    );
-    setEditReviewId(null);
-    setEditReviewText('');
-    setEditReviewRating(0); // Reset rating
-    setEditImageURL(''); // Reset image URL
+      if (!response.ok) throw new Error('Failed to update the review.');
+  
+      setReviews((prev) =>
+        prev.map((review) =>
+          review.id === editReviewId
+            ? { ...review, review_text: editReviewText, rating: editReviewRating, location_id: locationId }
+            : review
+        )
+      );
+  
+      // Reset form after successful update
+      setEditReviewId(null);
+      setEditReviewText('');
+      setEditReviewRating(0);
+      setEditImageURL('');
+    } catch (error) {
+      console.error('Error updating review:', error);
+    }
   };
+  
+  
+  
+  
 
   
 
@@ -186,19 +209,19 @@ const ManagePost = () => {
   
 
   const handleImageChange = (e) => {
-    setEditImageURL(e.target.files[0]); // Store the selected image
+    const file = e.target.files[0];
+    if (file) setEditImageURL(file); // Store selected image
   };
+  
   
   const handleEditBlog = (blog) => {
     setEditBlogId(blog.id);
     setEditBlogText(blog.content); // Set the current blog content
     setEditBlogTitle(blog.title);
   };
-
-  // Handle editing a blog comment
   const handleEditBlogComment = (comment) => {
     setEditBlogCommentId(comment.id);
-    setEditBlogCommentText(comment.comment); // Set the current blog comment
+    setEditBlogCommentText(comment.comment);
   };
 
   const handleDeleteBlog = async (blogId) => {
@@ -233,7 +256,7 @@ const ManagePost = () => {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${localStorage.getItem('token')}`,
       },
-      body: JSON.stringify({ title: editBlogTitle, content: editBlogText }), // Assuming you have a 'content' field in your blog data
+      body: JSON.stringify({ title: editBlogTitle, content: editBlogText }),
     });
     setBlogs((prev) =>
       prev.map((blog) =>
@@ -266,144 +289,161 @@ const ManagePost = () => {
 
   return (
     <div className="manage-post-container">
-
-<h2>Your Reviews</h2>
-    {reviews.length > 0 ? (
-      reviews.map((review) => (
-        <div key={review.id}>
-          {editReviewId === review.id ? (
-            <form onSubmit={handleUpdateReview}>
-              <textarea
-                value={editReviewText}
-                onChange={(e) => setEditReviewText(e.target.value)}
-                required
-              />
-              <input
-                type="number"
-                value={editReviewRating}
-                onChange={(e) => setEditReviewRating(e.target.value)}
-                min="1"
-                max="5"
-                required
-              />
-              <input
-                type="file"
-                onChange={(e) => setEditImageURL(e.target.files[0])} // Store the selected image
-                accept="image/*"
-              />
-              {review.image_url && (
-                <div>
-                  <img src={review.image_url} alt="Current Review" width="100" />
-                  <label>
-                    <input
-                      type="checkbox"
-                      onChange={() => setEditImageURL(null)} // Set to null if the checkbox is checked
-                    />
-                    Delete current image
-                  </label>
-                </div>
-              )}
-              <button type="submit">Update Review</button>
-            </form>
-          ) : (
+     <h2>Your Reviews</h2>
+{reviews.length > 0 ? (
+  reviews.map((review) => (
+    <div key={review.id}>
+      {editReviewId === review.id ? (
+        <form onSubmit={handleUpdateReview}>
+          <textarea
+            value={editReviewText}
+            onChange={(e) => setEditReviewText(e.target.value)}
+            required
+          />
+          <input
+            type="number"
+            value={editReviewRating}
+            onChange={(e) => setEditReviewRating(e.target.value)}
+            min="1"
+            max="5"
+            required
+          />
+          <input
+            type="file"
+            onChange={handleImageChange}
+            accept="image/*"
+          />
+          {review.image_url && (
             <div>
-              <p><strong>Review:</strong> {review.review_text}</p>
-              <p><strong>Rating:</strong> {review.rating}</p>
-              <p><strong>Location:</strong> {review.location}</p>
-              {review.image_url && <img src={review.image_url} alt="Review" width="100" />}
-              <button onClick={() => handleEditReview(review)}>Edit</button>
-              <button onClick={() => handleDeleteReview(review.id)}>Delete</button>
+              <img src={review.image_url} alt="Current Review" width="100" />
+              <label>
+                <input
+                  type="checkbox"
+                  onChange={() => setEditImageURL(null)}
+                />
+                Delete current image
+              </label>
             </div>
           )}
-        </div>
-      ))
-    ) : (
-      <p>No reviews found.</p>
-    )}
-
-      <h2>Your Review Comments</h2>
-      {comments.length > 0 ? (
-        comments.map((comment) => (
-          <div key={comment.id}>
-            {editCommentId === comment.id ? (
-              <form onSubmit={handleUpdateComment}>
-                <input
-                  type="text"
-                  value={editCommentText}
-                  onChange={(e) => setEditCommentText(e.target.value)}
-                  required
-                />
-                <button type="submit">Update Comment</button>
-              </form>
-            ) : (
-              <div>
-                <p><strong>Comment:</strong> {comment.comment}</p>
-                <button onClick={() => handleEditComment(comment)}>Edit</button>
-                <button onClick={() => handleDeleteComment(comment.id)}>Delete</button>
-              </div>
-            )}
-          </div>
-        ))
+          <button type="submit">Update Review</button>
+        </form>
       ) : (
-        <p>No review comments found.</p>
+        <div>
+          <p><strong>Review:</strong> {review.review_text}</p>
+          <p><strong>Rating:</strong> {review.rating}</p>
+          <p><strong>Location:</strong> {review.location_name}, {review.location_address}</p>
+          {review.image_url && <img src={review.image_url} alt="Review" width="100" />}
+          <button onClick={() => handleEditReview(review)}>Edit</button>
+          <button onClick={() => handleDeleteReview(review.id)}>Delete</button>
+        </div>
       )}
+    </div>
+  ))
+) : (
+  <p>No reviews found.</p>
+)}
+
+
+<h2>Your Review Comments</h2>
+{comments.length > 0 ? (
+  comments.map((comment) => (
+    <div key={comment.id}>
+      {editCommentId === comment.id ? (
+        <form onSubmit={handleUpdateComment}>
+          <input
+            type="text"
+            value={editCommentText}
+            onChange={(e) => setEditCommentText(e.target.value)}
+            required
+          />
+          <button type="submit">Update Comment</button>
+        </form>
+      ) : (
+        <div>
+          <p><strong>Comment:</strong> {comment.comment}</p>
+          <p><strong>On Review:</strong> {comment.review_post}</p>
+          <button onClick={() => handleEditComment(comment)}>Edit</button>
+          <button onClick={() => handleDeleteComment(comment.id)}>Delete</button>
+        </div>
+      )}
+    </div>
+  ))
+) : (
+  <p>No review comments found.</p>
+)}
+
+
       <h2>Your Blogs</h2>
       {blogs.length > 0 ? (
         blogs.map((blog) => (
           <div key={blog.id}>
             {editBlogId === blog.id ? (
-              <form onSubmit={handleUpdateBlog}>
-                <textarea
-                value={editBlogTitle}
-                onChange={(e) => setEditBlogTitle(e.target.value)}
-                required
-              />
-                <textarea
-                  value={editBlogText}
-                  onChange={(e) => setEditBlogText(e.target.value)}
-                  required
-                />
-                <button type="submit">Update Blog</button>
-              </form>
-            ) : (
-              <div>
-                <p><strong>{blog.title}</strong> {blog.content}</p>
-                <button onClick={() => handleEditBlog(blog)}>Edit</button>
-                <button onClick={() => handleDeleteBlog(blog.id)}>Delete</button>
-              </div>
-            )}
+  <form onSubmit={handleUpdateBlog}>
+    <textarea
+      value={editBlogTitle}
+      onChange={(e) => setEditBlogTitle(e.target.value)}
+      required
+    />
+    <textarea
+      value={editBlogText}
+      onChange={(e) => setEditBlogText(e.target.value)}
+      required
+    />
+    <input type="file" onChange={handleImageChange} accept="image/*" />
+    {blog.image_url && (
+      <div>
+        <img src={blog.image_url} alt="Blog" width="100" />
+        <label>
+          <input type="checkbox" onChange={() => setEditImageURL(null)} />
+          Delete current image
+        </label>
+      </div>
+    )}
+    <button type="submit">Update Blog</button>
+  </form>
+) : (
+  <div>
+    <p><strong>{blog.title}</strong> {blog.content}</p>
+    {blog.image_url && <img src={blog.image_url} alt="Blog" width="100" />}
+    <button onClick={() => handleEditBlog(blog)}>Edit</button>
+    <button onClick={() => handleDeleteBlog(blog.id)}>Delete</button>
+  </div>
+)}
+
           </div>
         ))
       ) : (
         <p>No blogs found.</p>
       )}
 
-      <h2>Your Blog Comments</h2>
-      {blogComments.length > 0 ? (
-        blogComments.map((comment) => (
-          <div key={comment.id}>
-            {editBlogCommentId === comment.id ? (
-              <form onSubmit={handleUpdateBlogComment}>
-                <input
-                  type="text"
-                  value={editBlogCommentText}
-                  onChange={(e) => setEditBlogCommentText(e.target.value)}
-                  required
-                />
-                <button type="submit">Update Blog Comment</button>
-              </form>
-            ) : (
-              <div>
-                <p><strong>Comment:</strong> {comment.comment}</p>
-                <button onClick={() => handleEditBlogComment(comment)}>Edit</button>
-                <button onClick={() => handleDeleteBlogComment(comment.id)}>Delete</button>
-              </div>
-            )}
-          </div>
-        ))
+<h2>Your Blog Comments</h2>
+{blogComments.length > 0 ? (
+  blogComments.map((comment) => (
+    <div key={comment.id}>
+      {editBlogCommentId === comment.id ? (
+        <form onSubmit={handleUpdateBlogComment}>
+          <input
+            type="text"
+            value={editBlogCommentText}
+            onChange={(e) => setEditBlogCommentText(e.target.value)}
+            required
+          />
+          <button type="submit">Update Blog Comment</button>
+        </form>
       ) : (
-        <p>No blog comments found.</p>
+        <div>
+          <p><strong>Comment:</strong> {comment.comment}</p>
+          <p><strong>On Blog:</strong> {comment.blog_title}</p> {/* Display blog title */}
+          <button onClick={() => handleEditBlogComment(comment)}>Edit</button>
+          <button onClick={() => handleDeleteBlogComment(comment.id)}>Delete</button>
+        </div>
       )}
+    </div>
+  ))
+) : (
+  <p>No blog comments found.</p>
+)}
+
     </div>
   );
 };

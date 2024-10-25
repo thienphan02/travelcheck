@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react'; 
 import { Autocomplete, useLoadScript } from '@react-google-maps/api';
 import '../styles/style.css';
 
@@ -9,11 +9,12 @@ const ReviewPage = () => {
   const [rating, setRating] = useState(0);
   const [reviews, setReviews] = useState([]);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [location, setLocation] = useState('');
+  const [locationId, setLocationId] = useState(null); // Reference the location ID
+  const [locationName, setLocationName] = useState(''); // Display name of the location
   const [address, setAddress] = useState('');
   const [type, setType] = useState('');
-  const [image, setImage] = useState(null); // To store the image file
-  const [comments, setComments] = useState({}); // Store comments for each review
+  const [image, setImage] = useState(null); // Store image file
+  const [comments, setComments] = useState({}); // Keep it initialized as an object
   const [likes, setLikes] = useState({}); // Store likes for each review
   const [autocomplete, setAutocomplete] = useState(null);
   const [showReviewSection, setShowReviewSection] = useState(false);
@@ -31,35 +32,44 @@ const ReviewPage = () => {
 
   const handlePlaceChanged = async () => {
     const place = autocomplete.getPlace();
-    setLocation(place.name);
-    setAddress(place.formatted_address);
-
-    if (place.types && place.types.length > 0) {
-      setType(place.types[0]);
-    }
-
-    // Fetch reviews for this location
+    const name = place.name;
+    const address = place.formatted_address;
+  
+    setLocationName(name);
+    setAddress(address);
+  
     try {
-      const response = await fetch(`http://localhost:5000/reviews?location=${place.name}`);
-      const data = await response.json();
-      setReviews(data);
+      const response = await fetch('http://localhost:5000/locations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, address }),
+      });
+  
+      const locationData = await response.json();
+      setLocationId(locationData.id);
+  
+      const reviewsResponse = await fetch(`http://localhost:5000/reviews?location_id=${locationData.id}`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+      });
+  
+      const reviewsData = await reviewsResponse.json();
+      setReviews(reviewsData);
+  
+      const initialLikes = {};
+      reviewsData.forEach((review) => {
+        initialLikes[review.id] = {
+          count: review.like_count || 0,
+          liked: review.user_liked === 1, // Track if the user has liked it
+        };
+      });
+      setLikes(initialLikes);
       setShowReviewSection(true);
-
-      // Initialize likes and comments for the fetched reviews
-      setLikes(Object.fromEntries(data.map(rev => [rev.id, 0]))); // Initialize likes count
-      setComments(Object.fromEntries(data.map(rev => [rev.id, []]))); // Initialize comments
-
-      // Fetch comments for each review
-      await Promise.all(data.map(async (rev) => {
-        const commentResponse = await fetch(`http://localhost:5000/reviews/${rev.id}/comments`);
-        const commentsData = await commentResponse.json();
-        setComments(prev => ({ ...prev, [rev.id]: commentsData }));
-      }));
     } catch (error) {
-      console.error('Error fetching reviews:', error);
+      console.error('Error fetching or creating location:', error);
     }
   };
-
+  
+  
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -67,43 +77,38 @@ const ReviewPage = () => {
       alert('You must be logged in to submit a review.');
       return;
     }
-
+  
     const token = localStorage.getItem('token');
     const formData = new FormData();
     formData.append('rating', rating);
     formData.append('review_text', review);
-    formData.append('location', location);
-    formData.append('type', type);
-    if (image) {
-      formData.append('image', image); // Attach image if selected
-    }
-
+    formData.append('location_id', locationId); // Submit location ID
+    if (image) formData.append('image', image);
+  
     try {
       const response = await fetch('http://localhost:5000/reviews', {
         method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
         body: formData,
       });
-
+  
       if (response.ok) {
-        const result = await response.json();
-        setReviews((prev) => [...prev, result]);
+        const newReview = await response.json();
+        setReviews((prev) => [...prev, newReview]);
         resetForm();
       } else {
         alert('Failed to submit review. Please try again.');
       }
     } catch (error) {
       console.error('Error submitting review:', error);
-      alert('An error occurred while submitting your review.');
     }
   };
+  
 
   const resetForm = () => {
     setReview('');
     setRating(0);
-    setLocation('');
+    setLocationName('');
     setType('');
     setAddress('');
     setImage(null);
@@ -114,22 +119,54 @@ const ReviewPage = () => {
     setImage(e.target.files[0]); // Store the selected image
   };
 
-  const handleLike = (reviewId) => {
-    setLikes((prev) => ({ ...prev, [reviewId]: prev[reviewId] + 1 }));
-    // Optionally, send a request to the backend to update likes
+  const handleLike = async (reviewId) => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      alert('You must be logged in to like a review.');
+      return;
+    }
+  
+    try {
+      const response = await fetch(`http://localhost:5000/reviews/${reviewId}/like`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+  
+      if (!response.ok) {
+        console.error('Failed to like/unlike review');
+        alert('Failed to update like status.');
+        return;
+      }
+  
+      const data = await response.json();
+  
+      setLikes((prev) => ({
+        ...prev,
+        [reviewId]: {
+          count: data.likes_count,
+          liked: !prev[reviewId].liked, // Toggle liked state
+        },
+      }));
+    } catch (error) {
+      console.error('Error liking/unliking review:', error);
+      alert('An error occurred. Please try again.');
+    }
   };
-
-  const handleDislike = (reviewId) => {
-    setLikes((prev) => ({ ...prev, [reviewId]: prev[reviewId] - 1 }));
-    // Optionally, send a request to the backend to update dislikes
-  };
+  
+  
+  
+  
+ 
 
   const handleCommentSubmit = async (e, reviewId) => {
     e.preventDefault();
-    const comment = e.target.comment.value;
-
-    if (!comment.trim()) return;
-
+    const comment = e.target.comment.value.trim();
+  
+    if (!comment) return;
+  
     try {
       const token = localStorage.getItem('token');
       const response = await fetch(`http://localhost:5000/reviews/${reviewId}/comments`, {
@@ -140,18 +177,27 @@ const ReviewPage = () => {
         },
         body: JSON.stringify({ comment }),
       });
-
-      if (response.ok) {
-        // Refetch comments after a successful submission
-        const commentResponse = await fetch(`http://localhost:5000/reviews/${reviewId}/comments`);
-        const commentsData = await commentResponse.json();
-        setComments(prev => ({ ...prev, [reviewId]: commentsData }));
-      }
+      
     } catch (error) {
       console.error('Error submitting comment:', error);
     }
   };
 
+  const fetchCommentsForReview = async (reviewId) => {
+    try {
+      const response = await fetch(`http://localhost:5000/reviews/${reviewId}/comments`);
+      const data = await response.json();
+      setComments((prev) => ({ ...prev, [reviewId]: data }));
+    } catch (error) {
+      console.error(`Error fetching comments for review ${reviewId}:`, error);
+    }
+  };
+  
+  useEffect(() => {
+    reviews.forEach((review) => fetchCommentsForReview(review.id));
+  }, [reviews]);
+  
+  
 
   if (loadError) return <div>Error loading maps</div>;
   if (!isLoaded) return <div>Loading...</div>;
@@ -165,8 +211,8 @@ const ReviewPage = () => {
       >
         <input
           type="text"
-          value={location}
-          onChange={(e) => setLocation(e.target.value)}
+          value={locationName}
+          onChange={(e) => setLocationName(e.target.value)}
           placeholder="Search for a location"
           required
           style={{ width: '400px', padding: '8px', marginRight: '8px' }}
@@ -176,7 +222,7 @@ const ReviewPage = () => {
       {showReviewSection && (
         <>
           <h3>Location Details</h3>
-          <p><strong>Name:</strong> {location}</p>
+          <p><strong>Name:</strong> {locationName}</p>
           <p><strong>Address:</strong> {address}</p>
 
           <form onSubmit={handleSubmit}>
@@ -203,19 +249,24 @@ const ReviewPage = () => {
             <button type="submit">Submit Review</button>
           </form>
 
-          <h3>Previous Reviews for {location}</h3>
+          <h3>Previous Reviews for {locationName}</h3>
           <ul>
             {reviews.map((rev) => (
               <li key={rev.id}>
-                <strong>Location:</strong> {rev.location} | <strong>Rating:</strong> {rev.rating} | <strong>Review:</strong> {rev.review_text}
+                <strong>Location:</strong> {rev.location_name} | <strong>Rating:</strong> {rev.rating} | <strong>Review:</strong> {rev.review_text}
                 {rev.image_url && (
                   <img src={rev.image_url} alt={rev.title} className="rev-image" />
                 )}
+                
                 <div>
-                  <button onClick={() => handleLike(rev.id)}>Like</button>
-                  <span>{likes[rev.id] || 0} Likes</span>
-                  <button onClick={() => handleDislike(rev.id)}>Dislike</button>
-                </div>
+  <button onClick={() => handleLike(rev.id)}>
+    {likes[rev.id]?.liked ? 'Unlike' : 'Like'}
+  </button>
+  <span>{likes[rev.id]?.count || 0} Likes</span>
+</div>
+
+
+
                 {/* Comment Form */}
                 <form onSubmit={(e) => handleCommentSubmit(e, rev.id)}>
                   <input type="text" name="comment" placeholder="Add a comment" required />
@@ -223,15 +274,17 @@ const ReviewPage = () => {
                 </form>
                 {/* Comments List */}
                 <ul>
-                  {comments[rev.id]?.map((comment, index) => (
-                    <li key={index}>{comment.comment}</li>
-                  ))}
+  {comments[rev.id]?.length > 0 ? (
+    comments[rev.id].map((comment, index) => (
+      <li key={index}>
+        <strong>{comment.username}:</strong> {comment.comment}
+      </li>
+    ))
+  ) : (
+    <li>No comments yet.</li>
+  )}
+</ul>
 
-                  {/* If no comments, show a message */}
-                  {(!comments[rev.id] || comments[rev.id].length === 0) && (
-                    <li>No comments yet.</li>
-                  )}
-                </ul>
               </li>
             ))}
           </ul>
@@ -239,7 +292,6 @@ const ReviewPage = () => {
       )}
     </div>
   );
-
 };
 
 export default ReviewPage;
