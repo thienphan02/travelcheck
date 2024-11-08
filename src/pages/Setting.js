@@ -77,9 +77,9 @@ const SettingsPage = () => {
   }
 
   return (
-    <div>
+    <div className="settings-page-container">
       <h1>Settings</h1>
-      <div>
+      <div className="settings-form">
         <input
           type="text"
           value={userInfo.username}

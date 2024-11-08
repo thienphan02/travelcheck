@@ -14,18 +14,6 @@ app.use(cors());
 
 const bcrypt = require('bcrypt');
 
-
-// const password = 'admin1';
-// const saltRounds = 10;
-
-// bcrypt.hash(password, saltRounds, (err, hash) => {
-//   if (err) {
-//     console.error('Error hashing password:', err);
-//   } else {
-//     console.log('Hashed password:', hash);
-//   }
-// });
-
 const jwt = require('jsonwebtoken');
 
 // JWT Secret Key - node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
@@ -144,41 +132,58 @@ app.post('/locations', (req, res) => {
 
 
 // Endpoint to fetch reviews
-// Fetch reviews and check if the user has liked each review
 app.get('/reviews', verifyToken, (req, res) => {
   const { location_id } = req.query;
-  const userId = req.userId || null; // Capture user ID from token if available
+  const userId = req.userId || null;
 
-  let sql = `
-    SELECT reviews.*, 
-           users.username, 
-           locations.name AS location_name, 
-           locations.address AS location_address,
-           IFNULL(SUM(review_likes_dislikes.liked), 0) AS like_count,
-           MAX(CASE WHEN review_likes_dislikes.user_id = ? AND review_likes_dislikes.liked = true THEN 1 ELSE 0 END) AS user_liked
+  // Step 1: Query to get the average rating for the location
+  const avgRatingQuery = `
+    SELECT AVG(rating) AS average_rating
     FROM reviews
-    LEFT JOIN users ON reviews.writer_id = users.id
-    LEFT JOIN locations ON reviews.location_id = locations.id
-    LEFT JOIN review_likes_dislikes 
-      ON reviews.id = review_likes_dislikes.review_id
-    GROUP BY reviews.id, users.username, locations.name, locations.address
+    WHERE location_id = ?
   `;
 
-  const params = [userId];
-
-  if (location_id) {
-    sql += ' HAVING reviews.location_id = ?';
-    params.push(location_id);
-  }
-
-  db.query(sql, params, (err, results) => {
+  db.query(avgRatingQuery, [location_id], (err, avgRatingResult) => {
     if (err) {
-      console.error('Error fetching reviews:', err);
-      return res.status(500).json([]);
+      console.error('Error fetching average rating:', err);
+      return res.status(500).json({ error: 'Failed to fetch average rating' });
     }
-    res.json(results || []);
+
+    const averageRating = avgRatingResult[0]?.average_rating || null;
+
+    // Step 2: Query to fetch individual reviews with likes and user info
+    const reviewsQuery = `
+      SELECT reviews.*, 
+             users.username, 
+             locations.name AS location_name, 
+             locations.address AS location_address,
+             IFNULL(SUM(review_likes_dislikes.liked), 0) AS like_count,
+             MAX(CASE WHEN review_likes_dislikes.user_id = ? AND review_likes_dislikes.liked = true THEN 1 ELSE 0 END) AS user_liked
+      FROM reviews
+      LEFT JOIN users ON reviews.writer_id = users.id
+      LEFT JOIN locations ON reviews.location_id = locations.id
+      LEFT JOIN review_likes_dislikes 
+        ON reviews.id = review_likes_dislikes.review_id
+      WHERE reviews.location_id = ?
+      GROUP BY reviews.id, users.username, locations.name, locations.address
+      ORDER BY like_count DESC
+    `;
+
+    db.query(reviewsQuery, [userId, location_id], (err, reviewResults) => {
+      if (err) {
+        console.error('Error fetching reviews:', err);
+        return res.status(500).json({ error: 'Failed to fetch reviews' });
+      }
+
+      // Return both the average rating and individual reviews in a single response
+      res.json({
+        average_rating: averageRating,
+        reviews: reviewResults || []
+      });
+    });
   });
 });
+
 
 
 // Endpoint to submit a review
@@ -239,28 +244,30 @@ app.post('/reviews/:id/like', verifyToken, (req, res) => {
   });
 });
 
-
-
+// Fetch paginated comments for a specific review
 app.get('/reviews/:id/comments', (req, res) => {
   const reviewId = req.params.id;
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 10; // Default: 10 comments per page
+  const offset = (page - 1) * limit;
 
   const sqlFetchComments = `
     SELECT review_comments.id, review_comments.comment, users.username
     FROM review_comments
     LEFT JOIN users ON review_comments.user_id = users.id
     WHERE review_comments.review_id = ?
+    ORDER BY review_comments.created_at DESC
+    LIMIT ? OFFSET ?;
   `;
-  
-  db.query(sqlFetchComments, [reviewId], (err, comments) => {
+
+  db.query(sqlFetchComments, [reviewId, limit, offset], (err, comments) => {
     if (err) return res.status(500).json({ message: 'Error fetching comments' });
 
-    res.json(comments); // Return only the comments array
+    res.json(comments); // Return paginated comments
   });
 });
 
-
-
-app.post('/reviews/:id/comments', verifyToken, (req, res) => {
+app.post('/reviews/:id/comments', verifyToken, (req, res) => { 
   const reviewId = req.params.id;
   const { comment } = req.body;
   const userId = req.userId;
@@ -273,17 +280,21 @@ app.post('/reviews/:id/comments', verifyToken, (req, res) => {
   db.query(sql, [reviewId, userId, comment], (err, result) => {
     if (err) return res.status(500).json({ message: 'Error submitting comment' });
 
-    const newComment = {
-      id: result.insertId,
-      username: req.userName,  // Ensure username is available in request (from token, perhaps)
-      comment,
-    };
-    
-    res.status(201).json(newComment);
+    // Fetch the username associated with the userId
+    const getUsernameSQL = 'SELECT username FROM users WHERE id = ?';
+    db.query(getUsernameSQL, [userId], (error, userResult) => {
+      if (error || !userResult.length) return res.status(500).json({ message: 'Error fetching username' });
+
+      const newComment = {
+        id: result.insertId,
+        username: userResult[0].username,
+        comment,
+      };
+      
+      res.status(201).json(newComment);
+    });
   });
 });
-
-
 
 // Fetch blogs along with the author information
 app.get('/blogs', (req, res) => {
@@ -298,6 +309,7 @@ app.get('/blogs', (req, res) => {
       WHERE liked = true
       GROUP BY post_id
     ) AS likes_data ON blog_posts.id = likes_data.post_id
+     ORDER BY likes_count DESC
   `;
   db.query(sql, (err, results) => {
     if (err) {
@@ -381,17 +393,23 @@ app.post('/blogs/:id/like', verifyToken, isMember, (req, res) => {
 // Fetch comments for a specific blog post
 app.get('/blogs/:id/comments', (req, res) => {
   const postId = req.params.id;
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 10; // Default: 10 comments per page
+  const offset = (page - 1) * limit;
 
   const sqlFetchComments = `
     SELECT comments.comment, users.username
-    FROM comments 
+    FROM comments
     LEFT JOIN users ON comments.user_id = users.id
     WHERE comments.post_id = ?
+    ORDER BY comments.created_at DESC
+    LIMIT ? OFFSET ?;
   `;
-  db.query(sqlFetchComments, [postId], (err, comments) => {
+
+  db.query(sqlFetchComments, [postId, limit, offset], (err, comments) => {
     if (err) return res.status(500).json({ message: 'Error fetching comments' });
 
-    res.json(comments); // Return the list of comments
+    res.json(comments); // Return paginated comments
   });
 });
 
@@ -550,28 +568,39 @@ app.put('/reviews/:id', verifyToken, upload.single('image'), (req, res) => {
     return res.status(400).json({ message: 'Location ID is required.' });
   }
 
-  const sql = `
-    UPDATE reviews 
-    SET review_text = ?, rating = ?, location_id = ?, 
-        image_url = COALESCE(?, image_url) 
-    WHERE id = ? AND writer_id = ?
-  `;
+  let sql;
+  const queryParams = [review_text, rating, location_id, reviewId, req.userId];
 
-  const finalImageUrl = delete_image === 'true' ? null : imageUrl;
+  // Dynamically adjust SQL query based on image update or deletion.
+  if (delete_image === 'true') {
+    sql = `
+      UPDATE reviews 
+      SET review_text = ?, rating = ?, location_id = ?, image_url = NULL 
+      WHERE id = ? AND writer_id = ?
+    `;
+  } else if (imageUrl) {
+    sql = `
+      UPDATE reviews 
+      SET review_text = ?, rating = ?, location_id = ?, image_url = ? 
+      WHERE id = ? AND writer_id = ?
+    `;
+    queryParams.splice(3, 0, imageUrl); // Insert the new image URL into parameters.
+  } else {
+    sql = `
+      UPDATE reviews 
+      SET review_text = ?, rating = ?, location_id = ? 
+      WHERE id = ? AND writer_id = ?
+    `;
+  }
 
-  db.query(
-    sql,
-    [review_text, rating, location_id, finalImageUrl, reviewId, req.userId],
-    (err) => {
-      if (err) {
-        console.error('Error updating review:', err);
-        return res.status(500).json({ message: 'Error updating review' });
-      }
-      res.json({ message: 'Review updated successfully' });
+  db.query(sql, queryParams, (err) => {
+    if (err) {
+      console.error('Error updating review:', err);
+      return res.status(500).json({ message: 'Error updating review' });
     }
-  );
+    res.json({ message: 'Review updated successfully' });
+  });
 });
-
 
 // Delete a review
 app.delete('/reviews/:id', verifyToken, (req, res) => {
@@ -629,23 +658,38 @@ app.get('/manage/blog-comments', verifyToken, (req, res) => {
   });
 });
 
-
-
 // Update a blog
 app.put('/blogs/:id', verifyToken, upload.single('image'), (req, res) => {
   const blogId = req.params.id;
   const { content, title, delete_image } = req.body;
   const imageUrl = req.file ? `http://localhost:5000/uploads/${req.file.filename}` : null;
 
-  const finalImageUrl = delete_image === 'true' ? null : imageUrl;
+  let sql;
+  const queryParams = [content, title, blogId, req.userId];
 
-  const sql = `
-    UPDATE blog_posts 
-    SET content = ?, title = ?, image_url = COALESCE(?, image_url) 
-    WHERE id = ? AND author_id = ?
-  `;
+  // Adjust SQL based on whether we are adding, updating, or deleting an image.
+  if (delete_image === 'true') {
+    sql = `
+      UPDATE blog_posts 
+      SET content = ?, title = ?, image_url = NULL 
+      WHERE id = ? AND author_id = ?
+    `;
+  } else if (imageUrl) {
+    sql = `
+      UPDATE blog_posts 
+      SET content = ?, title = ?, image_url = ? 
+      WHERE id = ? AND author_id = ?
+    `;
+    queryParams.splice(2, 0, imageUrl); // Add image URL to the query parameters.
+  } else {
+    sql = `
+      UPDATE blog_posts 
+      SET content = ?, title = ? 
+      WHERE id = ? AND author_id = ?
+    `;
+  }
 
-  db.query(sql, [content, title, finalImageUrl, blogId, req.userId], (err) => {
+  db.query(sql, queryParams, (err) => {
     if (err) {
       console.error('Error updating blog:', err);
       return res.status(500).json({ message: 'Error updating blog' });
@@ -653,7 +697,6 @@ app.put('/blogs/:id', verifyToken, upload.single('image'), (req, res) => {
     res.json({ message: 'Blog updated successfully' });
   });
 });
-
 
 // Delete a blog
 app.delete('/blogs/:id', verifyToken, (req, res) => {
@@ -710,11 +753,6 @@ app.get('/map/reviews', (req, res) => {
   });
 });
 
-
-
-
-
-
 // Add a favorite location
 app.post('/favorites', verifyToken, (req, res) => {
   const userId = req.userId; // Extracted from the token
@@ -758,11 +796,6 @@ const addFavorite = (userId, locationId, res) => {
   });
 };
 
-
-
-
-
-
 // Fetch all favorite locations for a user
 app.get('/favorites', verifyToken, (req, res) => {
   const userId = req.userId;
@@ -783,10 +816,6 @@ app.get('/favorites', verifyToken, (req, res) => {
   });
 });
 
-
-
-
-
 // Delete a favorite location
 app.delete('/favorites/:id', verifyToken, (req, res) => {
   const userId = req.userId;
@@ -804,12 +833,6 @@ app.delete('/favorites/:id', verifyToken, (req, res) => {
     res.status(204).send(); // No content on successful deletion
   });
 });
-
-
-
-
-
-
 
 // Assuming you have a middleware to verify tokens
 app.get('/users/me', verifyToken, (req, res) => {
@@ -972,7 +995,7 @@ app.delete('/users/:id', verifyToken, (req, res) => {
           });
         }
 
-        // Finally, delete the user
+        // delete the user
         db.query(deleteUser, [userId], (err) => {
           if (err) {
             return db.rollback(() => {
@@ -994,8 +1017,6 @@ app.delete('/users/:id', verifyToken, (req, res) => {
     });
   });
 });
-
-
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {

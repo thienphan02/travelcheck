@@ -1,12 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { GoogleMap, useLoadScript, Autocomplete, Marker, InfoWindow, DirectionsService, DirectionsRenderer } from '@react-google-maps/api';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faStar, faHeart } from '@fortawesome/free-solid-svg-icons';
 import '../styles/style.css';
 
 const LIBRARIES = ['places'];
 
 const mapContainerStyle = {
   width: '100%',
-  height: '600px',
+  height: '100%',
 };
 
 const MapPage = () => {
@@ -22,6 +24,7 @@ const MapPage = () => {
   const [toInput, setToInput] = useState('');
   const [autocompleteFrom, setAutocompleteFrom] = useState(null);
   const [autocompleteTo, setAutocompleteTo] = useState(null);
+  const [isFavorite, setIsFavorite] = useState(false);
 
   const { isLoaded, loadError } = useLoadScript({
     googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY,
@@ -70,11 +73,13 @@ const MapPage = () => {
   
       const data = await response.json();
       alert(`Added to favorites`);
+      setIsFavorite(true);
     } catch (error) {
       console.error('Error adding to favorites:', error);
       alert('Error adding to favorites.');
     }
   };
+  
 
   useEffect(() => {
     const handleGeolocation = () => {
@@ -96,10 +101,10 @@ const MapPage = () => {
     handleGeolocation();
   }, []);
 
-  const handleMarkerClick = (marker) => {
-    setSelectedPlace(marker); // Set selected place
-    fetchReviews(marker.name); // Fetch reviews based on place name
-  };
+  // const handleMarkerClick = (marker) => {
+  //   setSelectedPlace(marker); // Set selected place
+  //   fetchReviews(marker.name); // Fetch reviews based on place name
+  // };
 
   // Handle both text and nearby search
   const onSearch = () => {
@@ -254,12 +259,28 @@ const MapPage = () => {
     }
   };
 
+  const calculateAverageRating = () => {
+    if (reviews.length === 0) return 0;
+    const total = reviews.reduce((acc, review) => acc + review.rating, 0);
+    return (total / reviews.length).toFixed(1);
+  };
+
+  const renderStars = () => {
+    const average = Math.round(calculateAverageRating());
+    return Array.from({ length: 5 }, (_, index) => (
+      <FontAwesomeIcon
+        key={index}
+        icon={faStar}
+        color={index < average ? 'gold' : 'gray'}
+      />
+    ));
+  };
+
   if (loadError) return <div>Error loading maps</div>;
   if (!isLoaded) return <div>Loading Maps...</div>;
 
   return (
     <div className="map-container">
-      <h2>Find Places to Visit</h2>
       <div className="search-container">
         <Autocomplete
           onLoad={(autocompleteInstance) => setAutocomplete(autocompleteInstance)}
@@ -353,19 +374,26 @@ const MapPage = () => {
             onCloseClick={() => setSelectedPlace(null)}
           >
             <div>
-                      <button onClick={handleAddToFavorites}>Add to Favorites</button>
-
               <h2>{selectedPlace.name}</h2>
               <p>{selectedPlace.formatted_address}</p>
+              <div className="image-container">
+              <button
+                  onClick={handleAddToFavorites}
+                  className={`favorite-button ${isFavorite ? 'favorited' : ''}`}
+                >
+                  <FontAwesomeIcon icon={faHeart} />
+                </button>
               {selectedPlace.photos && selectedPlace.photos.length > 0 && (
                 <img
-                  src={selectedPlace.photos[0].getUrl({ maxWidth: 200 })}
+                  src={selectedPlace.photos[0].getUrl({ maxWidth: 500 })}
                   alt={selectedPlace.name}
-                  style={{ width: '100%', height: 'auto' }}
+                  style={{ width: '100%', height: 'auto', maxHeight: '300px' }}
                 />
               )}
+              </div>
               {/* Display reviews */}
               <div>
+              <p><strong>Average Rating:</strong> {renderStars()} ({calculateAverageRating()})</p>
                 <h3>Reviews</h3>
                 {reviews.length > 0 ? (
                   reviews.map((review) => (
@@ -379,7 +407,7 @@ const MapPage = () => {
                 ) : (
                   <p>No reviews available for this location.</p>
                 )}
-                <p><strong>Average Rating: {reviews.length ? (reviews.reduce((acc, review) => acc + review.rating, 0) / reviews.length).toFixed(1) : 0}</strong></p>
+                
               </div>
             </div>
           </InfoWindow>

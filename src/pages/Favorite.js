@@ -50,16 +50,16 @@ const FavoritesPage = () => {
   };
 
   return (
-    <div>
-      <h1>Your Favorite Locations</h1>
-      <ul>
+    <div className="favorites-page-container">
+      <h1>Favorite Locations</h1>
+      <ul className="favorites-list">
         {favorites.map((favorite) => (
-          <li key={favorite.id} style={{ display: 'flex', alignItems: 'center' }}>
-            <div style={{ flexGrow: 1 }}>
+          <li key={favorite.id} className="favorite-card">
+            <div className="favorite-info">
               <h2>{favorite.name}</h2>
               <p>{favorite.address}</p>
             </div>
-            <button onClick={() => handleDeleteFavorite(favorite.id)}>
+            <button className="delete-button" onClick={() => handleDeleteFavorite(favorite.id)}>
               Delete
             </button>
           </li>
