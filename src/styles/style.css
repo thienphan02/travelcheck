@@ -1006,7 +1006,6 @@ button:hover {
 }
 
 
-
 /* Manage Post Container */
 .manage-post-container {
   max-width: 1200px;
@@ -1022,7 +1021,7 @@ button:hover {
 .manage-post-container h2 {
   font-size: 28px;
   margin-bottom: 15px;
-  color: #333;
+  color: #2e2d2d;
   border-bottom: 2px solid #4CAF50;
   padding-bottom: 5px;
 }
