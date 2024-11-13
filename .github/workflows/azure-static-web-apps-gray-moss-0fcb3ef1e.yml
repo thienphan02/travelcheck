@@ -20,6 +20,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
         with:
+          node-version: '20'
           submodules: true
           lfs: false
       - name: Install OIDC Client from Core Package
@@ -35,6 +36,9 @@ jobs:
       - name: Build And Deploy
         id: builddeploy
         uses: Azure/static-web-apps-deploy@v1
+        env:
+          REACT_APP_GOOGLE_MAPS_API_KEY: ${{ secrets.REACT_APP_GOOGLE_MAPS_API_KEY }}
+          CI: false
         with:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_GRAY_MOSS_0FCB3EF1E }}
           action: "upload"
