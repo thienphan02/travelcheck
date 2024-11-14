@@ -33,7 +33,7 @@ app.use(settingsRoutes);
 app.use(manageRoutes);
 app.use(adminUserRoutes);
 
-// Function to start the server
+// start the server
 const startServer = () => {
   const PORT = process.env.PORT || 5000;
   app.listen(PORT, () => {
