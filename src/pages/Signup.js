@@ -26,7 +26,7 @@ const SignUpPage = () => {
         const signupData = { username, password, email };
 
         try {
-            const response = await fetch('http://localhost:5000/signup', {
+            const response = await fetch('https://travelcheck-hzdwesazbcead2bm.canadacentral-01.azurewebsites.net/signup', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

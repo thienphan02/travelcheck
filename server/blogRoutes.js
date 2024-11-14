@@ -25,10 +25,10 @@ router.get('/blogs', (req, res) => {
 });
 
 // Create a new blog post
-router.post('/blogs', verifyToken, isMember, upload.single('image'), (req, res) => {
+router.post('/blogs', verifyToken, isMember, upload.single('image'), async (req, res) => {
   const { title, content } = req.body;
   const authorId = req.userId;
-  const imageUrl = req.file ? `http://localhost:5000/uploads/${req.file.filename}` : null;
+  const imageUrl = req.file ? await upload(req.file) : null;
 
   if (!title || !content) {
     return res.status(400).json({ message: 'Title and content are required' });

@@ -18,7 +18,9 @@ dotenv.config();
 
 const app = express();
 app.use(express.json());
-app.use(cors());
+app.use(cors({
+  origin: 'https://gray-moss-0fcb3ef1e.5.azurestaticapps.net',
+}));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Register routes

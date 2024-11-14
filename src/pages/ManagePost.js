@@ -26,10 +26,10 @@ const ManagePost = () => {
     const fetchData = async () => {
       try {
         const [reviewResponse, commentResponse, blogResponse, blogCommentResponse] = await Promise.all([
-          fetch('http://localhost:5000/manage/reviews', { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }),
-          fetch('http://localhost:5000/manage/comments', { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }),
-          fetch('http://localhost:5000/manage/blogs', { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }),
-          fetch('http://localhost:5000/manage/blog-comments', { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }),
+          fetch('https://travelcheck-hzdwesazbcead2bm.canadacentral-01.azurewebsites.net/manage/reviews', { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }),
+          fetch('https://travelcheck-hzdwesazbcead2bm.canadacentral-01.azurewebsites.net/manage/comments', { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }),
+          fetch('https://travelcheck-hzdwesazbcead2bm.canadacentral-01.azurewebsites.net/manage/blogs', { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }),
+          fetch('https://travelcheck-hzdwesazbcead2bm.canadacentral-01.azurewebsites.net/manage/blog-comments', { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }),
         ]);
 
         const [reviewsData, commentsData, blogsData, blogCommentsData] = await Promise.all([
@@ -70,7 +70,7 @@ const ManagePost = () => {
 
   const handleDeleteReview = async (reviewId) => {
     if (window.confirm('Are you sure you want to delete this review?')) {
-      await fetch(`http://localhost:5000/reviews/${reviewId}`, {
+      await fetch(`https://travelcheck-hzdwesazbcead2bm.canadacentral-01.azurewebsites.net/reviews/${reviewId}`, {
         method: 'DELETE',
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`,
@@ -84,7 +84,7 @@ const ManagePost = () => {
 
   const handleDeleteComment = async (commentId) => {
     if (window.confirm('Are you sure you want to delete this comment?')) {
-      await fetch(`http://localhost:5000/comments/${commentId}`, {
+      await fetch(`https://travelcheck-hzdwesazbcead2bm.canadacentral-01.azurewebsites.net/comments/${commentId}`, {
         method: 'DELETE',
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`,
@@ -115,7 +115,7 @@ const ManagePost = () => {
     }
 
     try {
-      const response = await fetch(`http://localhost:5000/reviews/${editReviewId}`, {
+      const response = await fetch(`https://travelcheck-hzdwesazbcead2bm.canadacentral-01.azurewebsites.net/reviews/${editReviewId}`, {
         method: 'PUT',
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`,
@@ -152,7 +152,7 @@ const ManagePost = () => {
 
   const handleUpdateComment = async (e) => {
     e.preventDefault();
-    await fetch(`http://localhost:5000/comments/${editCommentId}`, {
+    await fetch(`https://travelcheck-hzdwesazbcead2bm.canadacentral-01.azurewebsites.net/comments/${editCommentId}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -188,7 +188,7 @@ const ManagePost = () => {
 
   const handleDeleteBlog = async (blogId) => {
     if (window.confirm('Are you sure you want to delete this blog?')) {
-      await fetch(`http://localhost:5000/blogs/${blogId}`, {
+      await fetch(`https://travelcheck-hzdwesazbcead2bm.canadacentral-01.azurewebsites.net/blogs/${blogId}`, {
         method: 'DELETE',
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`,
@@ -200,7 +200,7 @@ const ManagePost = () => {
 
   const handleDeleteBlogComment = async (commentId) => {
     if (window.confirm('Are you sure you want to delete this blog comment?')) {
-      await fetch(`http://localhost:5000/blog-comments/${commentId}`, {
+      await fetch(`https://travelcheck-hzdwesazbcead2bm.canadacentral-01.azurewebsites.net/blog-comments/${commentId}`, {
         method: 'DELETE',
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`,
@@ -224,7 +224,7 @@ const ManagePost = () => {
     }
   
     try {
-      const response = await fetch(`http://localhost:5000/blogs/${editBlogId}`, {
+      const response = await fetch(`https://travelcheck-hzdwesazbcead2bm.canadacentral-01.azurewebsites.net/blogs/${editBlogId}`, {
         method: 'PUT',
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`,
@@ -253,7 +253,7 @@ const ManagePost = () => {
 
   const handleUpdateBlogComment = async (e) => {
     e.preventDefault();
-    await fetch(`http://localhost:5000/blog-comments/${editBlogCommentId}`, {
+    await fetch(`https://travelcheck-hzdwesazbcead2bm.canadacentral-01.azurewebsites.net/blog-comments/${editBlogCommentId}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',

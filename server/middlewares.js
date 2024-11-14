@@ -1,7 +1,10 @@
 const jwt = require('jsonwebtoken');
 const multer = require('multer');
 const path = require('path');
+const fs = require('fs').promises;
 const JWT_SECRET = process.env.JWT_SECRET;
+const { BlobServiceClient } = require('@azure/storage-blob');
+const AZURE_STORAGE_CONNECTION_STRING = process.env.AZURE_STORAGE_CONNECTION_STRING;
 
 const verifyToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
@@ -32,15 +35,26 @@ const storage = multer.diskStorage({
   filename: (req, file, cb) => cb(null, Date.now() + path.extname(file.originalname))
 });
 
-const upload = multer({
-  storage: storage,
-  limits: { fileSize: 2 * 1024 * 1024 },
-  fileFilter: (req, file, cb) => {
-    const filetypes = /jpeg|jpg|png/;
-    const mimetype = filetypes.test(file.mimetype);
-    const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
-    cb(mimetype && extname ? null : new Error('Only images are allowed'));
+const upload = async (file) => {
+  try {
+    const blobServiceClient = BlobServiceClient.fromConnectionString(AZURE_STORAGE_CONNECTION_STRING);
+    const containerClient = blobServiceClient.getContainerClient('uploads');
+    
+    await containerClient.createIfNotExists({ access: 'container' });
+    const blobName = Date.now() + path.extname(file.originalname);
+    const blockBlobClient = containerClient.getBlockBlobClient(blobName);
+
+    // Upload file to Azure Blob Storage
+    await blockBlobClient.uploadFile(file.path);
+
+    // Delete the file from the server after uploading to Azure
+    await fs.unlink(file.path);
+
+    return blockBlobClient.url;
+  } catch (error) {
+    console.error('Error uploading file to Azure Blob Storage:', error);
+    throw new Error('File upload failed');
   }
-});
+};
 
 module.exports = { verifyToken, isMember, isAdmin, upload };

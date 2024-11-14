@@ -4,6 +4,7 @@
   "private": true,
   "dependencies": {
     "20": "^3.1.9",
+    "@azure/storage-blob": "^12.25.0",
     "@babel/plugin-transform-optional-chaining": "^7.25.9",
     "@babel/plugin-transform-private-methods": "^7.25.9",
     "@chakra-ui/react": "^3.0.2",

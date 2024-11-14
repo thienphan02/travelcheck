@@ -68,10 +68,10 @@ router.get('/reviews', verifyToken, (req, res) => {
 });
 
 // Submit a new review
-router.post('/reviews', verifyToken, isMember, upload.single('image'), (req, res) => {
+router.post('/reviews', verifyToken, isMember, upload.single('image'), async (req, res) => {
   const { rating, review_text, location_id } = req.body;
   const writerId = req.userId;
-  const imageUrl = req.file ? `http://localhost:5000/uploads/${req.file.filename}` : null;
+  const imageUrl = req.file ? await upload(req.file) : null;
 
   if (!location_id || !review_text) {
     return res.status(400).json({ message: 'Location ID and review text are required' });

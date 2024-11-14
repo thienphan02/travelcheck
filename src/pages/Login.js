@@ -24,7 +24,7 @@ const LoginPage = () => {
         const loginData = { email, password };
 
         try {
-            const response = await fetch('http://localhost:5000/login', {
+            const response = await fetch('https://travelcheck-hzdwesazbcead2bm.canadacentral-01.azurewebsites.net/login', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

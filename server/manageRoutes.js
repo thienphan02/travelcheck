@@ -41,10 +41,10 @@ router.get('/manage/comments', verifyToken, (req, res) => {
 });
 
 // Update a review
-router.put('/reviews/:id', verifyToken, upload.single('image'), (req, res) => {
+router.put('/reviews/:id', verifyToken, upload.single('image'), async (req, res) => {
   const reviewId = req.params.id;
   const { review_text, rating, location_id, delete_image } = req.body;
-  const imageUrl = req.file ? `http://localhost:5000/uploads/${req.file.filename}` : null;
+  const imageUrl = req.file ? await upload(req.file) : null;
 
   if (!location_id) {
     return res.status(400).json({ message: 'Location ID is required.' });
@@ -134,10 +134,10 @@ router.get('/manage/blog-comments', verifyToken, (req, res) => {
 });
 
 // Update a blog
-router.put('/blogs/:id', verifyToken, upload.single('image'), (req, res) => {
+router.put('/blogs/:id', verifyToken, upload.single('image'), async (req, res) => {
   const blogId = req.params.id;
   const { content, title, delete_image } = req.body;
-  const imageUrl = req.file ? `http://localhost:5000/uploads/${req.file.filename}` : null;
+  const imageUrl = req.file ? await upload(req.file) : null;
 
   let sql;
   const queryParams = [content, title, blogId, req.userId];
