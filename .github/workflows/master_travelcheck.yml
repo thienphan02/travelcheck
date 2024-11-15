@@ -11,7 +11,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
 
     steps:
       - uses: actions/checkout@v4
@@ -24,16 +24,16 @@ jobs:
       - name: npm install, build, and test
         run: |
           npm install
-          CI=false npm run build --if-present
-
-      - name: Zip artifact for deployment
-        run: zip release.zip ./* -r
-
+          npm run build --if-present
+        env:
+          REACT_APP_GOOGLE_MAPS_API_KEY: ${{ secrets.REACT_APP_GOOGLE_MAPS_API_KEY }}
+          CI: false
+      
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
           name: node-app
-          path: release.zip
+          path: .
 
   deploy:
     runs-on: ubuntu-latest
@@ -49,21 +49,19 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: node-app
-
-      - name: Unzip artifact for deployment
-        run: unzip release.zip
       
       - name: Login to Azure
         uses: azure/login@v2
         with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_CBDD0537F61C45DA8D2B52976BB27176 }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_FBC02FA863414782B6846DE323E86E28 }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_5121813AFDC04E60ABB5A82129B5B9C6 }}
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_B0DC4B4C8E1D4A2EBF1521E01EAC9C14 }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_D2738767A2BF4898A6B903D2D485E10C }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_9DD06522AD1946B0BE2069619966C295 }}
 
       - name: 'Deploy to Azure Web App'
-        id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
+        id: deploy-to-webapp
         with:
           app-name: 'travelcheck'
-          package: .
+          slot-name: 'Production'
+          package: ./build
           
