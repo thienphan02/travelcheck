@@ -30,9 +30,10 @@ app.options('*', cors(corsOptions)); // Handle preflight
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 
+app.options('*', cors(corsOptions));
 
 // Register routes
-app.use(authRoutes);
+app.use('/api', authRoutes);
 app.use(reviewRoutes);
 app.use(blogRoutes);
 app.use(favoriteRoutes);
