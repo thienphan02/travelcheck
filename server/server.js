@@ -15,7 +15,7 @@ const manageRoutes = require('./manageRoutes');
 const adminUserRoutes = require('./adminUserRoutes');
 const corsOptions = {
   origin: 'https://gray-moss-0fcb3ef1e.5.azurestaticapps.net', // Replace with your frontend origin
-  methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
   credentials: true, // If you need to send cookies
 };
 
