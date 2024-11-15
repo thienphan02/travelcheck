@@ -26,11 +26,7 @@ app.use(express.json());
 app.use(cors(corsOptions));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-app.use(express.static(path.join(__dirname, 'build'))); // Adjust path to your React build folder
 
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'build', 'index.html')); // Adjust path
-});
 
 // Register routes
 app.use(authRoutes);
@@ -41,6 +37,12 @@ app.use(mapRoutes);
 app.use(settingsRoutes);
 app.use(manageRoutes);
 app.use(adminUserRoutes);
+
+app.use(express.static(path.join(__dirname, 'build'))); // Adjust path to your React build folder
+
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'build', 'index.html')); // Adjust path
+});
 
 // start the server
 const startServer = () => {
