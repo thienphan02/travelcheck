@@ -1,15 +1,6 @@
 {
   "routes": [
     {
-      "route": "/signup",
-      "methods": [
-        "post"
-      ],
-      "headers": {
-        "Content-Type": "application/json"
-      }
-    },
-    {
       "route": "/*",
       "serve": "/index.html",
       "statusCode": 200
