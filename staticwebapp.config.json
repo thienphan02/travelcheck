@@ -1,13 +1,23 @@
 {
   "routes": [
     {
-      "route": "/signup",
+      "route": "/*",
       "methods": [
-        "post"
+        "get",
+        "head",
+        "post",
+        "put",
+        "delete",
+        "connect",
+        "options",
+        "trace",
+        "patch"
       ],
-      "headers": {
-        "Content-Type": "application/json"
-      }
+      "statusCode": 200
+    }
+    {
+      "route": "/api/*",
+      "rewrite": "https://travelcheck-hzdwesazbcead2bm.canadacentral-01.azurewebsites.net/api/*"
     }
   ]
 }
