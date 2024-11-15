@@ -14,9 +14,10 @@ const settingsRoutes = require('./settingsRoutes');
 const manageRoutes = require('./manageRoutes');
 const adminUserRoutes = require('./adminUserRoutes');
 const corsOptions = {
-  origin: ['https://gray-moss-0fcb3ef1e.5.azurestaticapps.net'], // Frontend origin
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  credentials: true, // If you need cookies/auth tokens
+  origin: ['https://gray-moss-0fcb3ef1e.5.azurestaticapps.net'], // Allow frontend origin
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // Include OPTIONS for preflight
+  allowedHeaders: ['Content-Type', 'Authorization'], // Allow necessary headers
+  credentials: true, // Allow credentials if needed
 };
 
 dotenv.config();
@@ -24,6 +25,7 @@ dotenv.config();
 const app = express();
 app.use(express.json());
 app.use(cors(corsOptions));
+app.options('*', cors(corsOptions)); // Handle preflight
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 
