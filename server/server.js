@@ -14,11 +14,12 @@ const settingsRoutes = require('./settingsRoutes');
 const manageRoutes = require('./manageRoutes');
 const adminUserRoutes = require('./adminUserRoutes');
 const corsOptions = {
-  origin: ['https://gray-moss-0fcb3ef1e.5.azurestaticapps.net'], // Allow frontend origin
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // Include OPTIONS for preflight
-  allowedHeaders: ['Content-Type', 'Authorization'], // Allow necessary headers
-  credentials: true, // Allow credentials if needed
+  origin: ['https://gray-moss-0fcb3ef1e.5.azurestaticapps.net'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-requested-with'],
+  credentials: true,
 };
+
 
 dotenv.config();
 
