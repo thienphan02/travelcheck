@@ -4,7 +4,10 @@
       "route": "/signup",
       "methods": [
         "post"
-      ]
+      ],
+      "headers": {
+        "Content-Type": "application/json"
+      }
     }
   ]
 }
