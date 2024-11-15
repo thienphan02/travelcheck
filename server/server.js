@@ -13,14 +13,17 @@ const mapRoutes = require('./mapRoutes');
 const settingsRoutes = require('./settingsRoutes');
 const manageRoutes = require('./manageRoutes');
 const adminUserRoutes = require('./adminUserRoutes');
+const corsOptions = {
+  origin: 'https://gray-moss-0fcb3ef1e.5.azurestaticapps.net', // Replace with your frontend origin
+  methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+  credentials: true, // If you need to send cookies
+};
 
 dotenv.config();
 
 const app = express();
 app.use(express.json());
-app.use(cors({
-  origin: 'https://gray-moss-0fcb3ef1e.5.azurestaticapps.net',
-}));
+app.use(cors(corsOptions));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Register routes
@@ -35,7 +38,7 @@ app.use(adminUserRoutes);
 
 // start the server
 const startServer = () => {
-  const PORT = process.env.PORT || 5000;
+  const PORT = process.env.PORT || 8080;
   app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
   });
