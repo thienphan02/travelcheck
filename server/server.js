@@ -14,9 +14,9 @@ const settingsRoutes = require('./settingsRoutes');
 const manageRoutes = require('./manageRoutes');
 const adminUserRoutes = require('./adminUserRoutes');
 const corsOptions = {
-  origin: 'https://gray-moss-0fcb3ef1e.5.azurestaticapps.net', // Replace with your frontend origin
+  origin: ['https://gray-moss-0fcb3ef1e.5.azurestaticapps.net'], // Frontend origin
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  credentials: true, // If you need to send cookies
+  credentials: true, // If you need cookies/auth tokens
 };
 
 dotenv.config();
@@ -25,6 +25,12 @@ const app = express();
 app.use(express.json());
 app.use(cors(corsOptions));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+app.use(express.static(path.join(__dirname, 'build'))); // Adjust path to your React build folder
+
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'build', 'index.html')); // Adjust path
+});
 
 // Register routes
 app.use(authRoutes);
