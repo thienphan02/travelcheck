@@ -29,7 +29,7 @@ const BlogPage = () => {
   useEffect(() => {
     const fetchBlogs = async () => {
       try {
-        const response = await fetch('https://travelcheck-hzdwesazbcead2bm.canadacentral-01.azurewebsites.net/blogs');
+        const response = await fetch('https://travelcheck-hzdwesazbcead2bm.canadaeast-01.azurewebsites.net/blogs');
         if (response.ok) {
           const data = await response.json();
     
@@ -76,7 +76,7 @@ const BlogPage = () => {
   const handleLike = async (blogId, liked) => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`https://travelcheck-hzdwesazbcead2bm.canadacentral-01.azurewebsites.net/blogs/${blogId}/like`, {
+      const response = await fetch(`https://travelcheck-hzdwesazbcead2bm.canadaeast-01.azurewebsites.net/blogs/${blogId}/like`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -131,7 +131,7 @@ const BlogPage = () => {
 
   try {
     const token = localStorage.getItem('token');
-    const response = await fetch(`https://travelcheck-hzdwesazbcead2bm.canadacentral-01.azurewebsites.net/blogs/${blogId}/comments`, {
+    const response = await fetch(`https://travelcheck-hzdwesazbcead2bm.canadaeast-01.azurewebsites.net/blogs/${blogId}/comments`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -142,7 +142,7 @@ const BlogPage = () => {
 
     if (response.ok) {
       // Fetch the latest comments after the new comment is added
-      const commentsResponse = await fetch(`https://travelcheck-hzdwesazbcead2bm.canadacentral-01.azurewebsites.net/blogs/${blogId}/comments`);
+      const commentsResponse = await fetch(`https://travelcheck-hzdwesazbcead2bm.canadaeast-01.azurewebsites.net/blogs/${blogId}/comments`);
       const updatedComments = await commentsResponse.json();
 
       // Update the selectedBlog with the latest comments
@@ -195,7 +195,7 @@ const BlogPage = () => {
 
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('https://travelcheck-hzdwesazbcead2bm.canadacentral-01.azurewebsites.net/blogs', {
+      const response = await fetch('https://travelcheck-hzdwesazbcead2bm.canadaeast-01.azurewebsites.net/blogs', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`, // Keep the token in headers
@@ -247,7 +247,7 @@ const BlogPage = () => {
   const loadMoreComments = async (blogId, page) => {
     try {
       const response = await fetch(
-        `https://travelcheck-hzdwesazbcead2bm.canadacentral-01.azurewebsites.net/blogs/${blogId}/comments?page=${page}&limit=${COMMENTS_PER_PAGE}`
+        `https://travelcheck-hzdwesazbcead2bm.canadaeast-01.azurewebsites.net/blogs/${blogId}/comments?page=${page}&limit=${COMMENTS_PER_PAGE}`
       );
   
       if (!response.ok) throw new Error('Failed to fetch comments');

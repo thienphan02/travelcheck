@@ -11,7 +11,7 @@ const FavoritesPage = () => {
   const fetchFavorites = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('https://travelcheck-hzdwesazbcead2bm.canadacentral-01.azurewebsites.net/favorites', {
+      const response = await fetch('https://travelcheck-hzdwesazbcead2bm.canadaeast-01.azurewebsites.net/favorites', {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -29,7 +29,7 @@ const FavoritesPage = () => {
   const handleDeleteFavorite = async (favoriteId) => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`https://travelcheck-hzdwesazbcead2bm.canadacentral-01.azurewebsites.net/favorites/${favoriteId}`, {
+      const response = await fetch(`https://travelcheck-hzdwesazbcead2bm.canadaeast-01.azurewebsites.net/favorites/${favoriteId}`, {
         method: 'DELETE',
         headers: {
           Authorization: `Bearer ${token}`,

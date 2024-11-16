@@ -11,7 +11,7 @@ const SettingsPage = () => {
 
     const fetchUserInfo = async () => {
       try {
-        const response = await fetch('https://travelcheck-hzdwesazbcead2bm.canadacentral-01.azurewebsites.net/users/me', { // Adjust the endpoint to fetch the current user
+        const response = await fetch('https://travelcheck-hzdwesazbcead2bm.canadaeast-01.azurewebsites.net/users/me', { // Adjust the endpoint to fetch the current user
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -36,7 +36,7 @@ const SettingsPage = () => {
   const handleUpdateUserInfo = async () => {
     const token = localStorage.getItem('token');
     try {
-      const response = await fetch('https://travelcheck-hzdwesazbcead2bm.canadacentral-01.azurewebsites.net/users/me', {
+      const response = await fetch('https://travelcheck-hzdwesazbcead2bm.canadaeast-01.azurewebsites.net/users/me', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
