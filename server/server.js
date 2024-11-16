@@ -16,7 +16,7 @@ const adminUserRoutes = require('./adminUserRoutes');
 const corsOptions = {
   origin: [
     'https://gray-moss-0fcb3ef1e.5.azurestaticapps.net',
-    'https://travelcheck-hzdwesazbcead2bm.canadacentral-01.azurewebsites.net'
+    'https://travelcheck-hzdwesazbcead2bm.canadaeast-01.azurewebsites.net'
   ],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'x-requested-with'],
@@ -43,10 +43,11 @@ app.use(settingsRoutes);
 app.use(manageRoutes);
 app.use(adminUserRoutes);
 
-app.use(express.static(path.join(__dirname, 'build'))); // Adjust path to your React build folder
+app.use(express.static(path.join(__dirname, '../build')));
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'build', 'index.html')); // Adjust path
+  res.sendFile(path.join(__dirname, '../build', 'index.html'));
 });
+
 
 
 // start the server
