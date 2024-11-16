@@ -52,7 +52,7 @@ app.get('*', (req, res) => {
 
 // start the server
 const startServer = () => {
-  const PORT = process.env.PORT || 8080;
+  const PORT = process.env.PORT || 80;
   app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
   });
