@@ -33,7 +33,7 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.options('*', cors(corsOptions));
 
 // Register routes
-app.use('/api', authRoutes);
+app.use(authRoutes);
 app.use(reviewRoutes);
 app.use(blogRoutes);
 app.use(favoriteRoutes);
