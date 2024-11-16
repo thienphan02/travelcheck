@@ -14,7 +14,7 @@
         "patch"
       ],
       "statusCode": 200
-    }
+    },
     {
       "route": "/api/*",
       "rewrite": "https://travelcheck-hzdwesazbcead2bm.canadacentral-01.azurewebsites.net/api/*"
