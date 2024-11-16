@@ -1,10 +1,6 @@
 {
   "routes": [
     {
-      "route": "/api/*",
-      "rewrite": "https://travelcheck-hzdwesazbcead2bm.canadacentral-01.azurewebsites.net/api/*"
-    },
-    {
       "route": "/*",
       "methods": [
         "get",
