@@ -1,0 +1,4 @@
+{
+    "appService.defaultWebAppToDeploy": "undefined/subscriptions/b84c69e9-e3ae-4080-95dd-f32d48c94a45/resourceGroups/travelcheck_group-bc06/providers/Microsoft.Web/sites/travelcheck",
+    "appService.deploySubpath": "."
+}

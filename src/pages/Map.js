@@ -34,7 +34,7 @@ const MapPage = () => {
   const fetchReviews = async (placeName) => {
     try {
       const response = await fetch(
-        `https://travelcheck-hzdwesazbcead2bm.canadacentral-01.azurewebsites.net/map/reviews?name=${encodeURIComponent(placeName)}`
+        `https://travelcheck.azurewebsites.net/map/reviews?name=${encodeURIComponent(placeName)}`
       );
       if (!response.ok) throw new Error('Failed to fetch reviews');
 
@@ -54,7 +54,7 @@ const MapPage = () => {
     const { place_id, name, formatted_address } = selectedPlace; // Use place_id from selectedPlace
     
     try {
-      const response = await fetch('https://travelcheck-hzdwesazbcead2bm.canadacentral-01.azurewebsites.net/favorites', {
+      const response = await fetch('https://travelcheck.azurewebsites.net/favorites', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -13,7 +13,7 @@ const ManageUsers = () => {
 
     const fetchUsers = async () => {
       try {
-        const response = await fetch('https://travelcheck-hzdwesazbcead2bm.canadacentral-01.azurewebsites.net/users', {
+        const response = await fetch('https://travelcheck.azurewebsites.net/users', {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -44,7 +44,7 @@ const ManageUsers = () => {
 
     const token = localStorage.getItem('token');
     try {
-      const response = await fetch(`https://travelcheck-hzdwesazbcead2bm.canadacentral-01.azurewebsites.net/users/${id}`, {
+      const response = await fetch(`https://travelcheck.azurewebsites.net/users/${id}`, {
         method: 'DELETE',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -78,7 +78,7 @@ const ManageUsers = () => {
 
     const token = localStorage.getItem('token');
     try {
-      const response = await fetch(`https://travelcheck-hzdwesazbcead2bm.canadacentral-01.azurewebsites.net/users/${editUser.id}`, {
+      const response = await fetch(`https://travelcheck.azurewebsites.net/users/${editUser.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -111,7 +111,7 @@ const ManageUsers = () => {
 
     const token = localStorage.getItem('token');
     try {
-      const response = await fetch('https://travelcheck-hzdwesazbcead2bm.canadacentral-01.azurewebsites.net/users', {
+      const response = await fetch('https://travelcheck.azurewebsites.net/users', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -138,7 +138,7 @@ const ManageUsers = () => {
   const fetchUsers = async () => {
     const token = localStorage.getItem('token');
     try {
-      const response = await fetch('https://travelcheck-hzdwesazbcead2bm.canadacentral-01.azurewebsites.net/users', {
+      const response = await fetch('https://travelcheck.azurewebsites.net/users', {
         headers: {
           Authorization: `Bearer ${token}`,
         },

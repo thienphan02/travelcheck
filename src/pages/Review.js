@@ -51,7 +51,7 @@ const ReviewPage = () => {
     setAddress(address);
 
     try {
-      const response = await fetch('https://travelcheck-hzdwesazbcead2bm.canadacentral-01.azurewebsites.net/locations', {
+      const response = await fetch('https://travelcheck.azurewebsites.net/locations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, address }),
@@ -60,7 +60,7 @@ const ReviewPage = () => {
       const locationData = await response.json();
       setLocationId(locationData.id);
 
-      const reviewsResponse = await fetch(`https://travelcheck-hzdwesazbcead2bm.canadacentral-01.azurewebsites.net/reviews?location_id=${locationData.id}`, {
+      const reviewsResponse = await fetch(`https://travelcheck.azurewebsites.net/reviews?location_id=${locationData.id}`, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
       });
 
@@ -101,7 +101,7 @@ const ReviewPage = () => {
     if (image) formData.append('image', image);
 
     try {
-      const response = await fetch('https://travelcheck-hzdwesazbcead2bm.canadacentral-01.azurewebsites.net/reviews', {
+      const response = await fetch('https://travelcheck.azurewebsites.net/reviews', {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
         body: formData,
@@ -170,7 +170,7 @@ const ReviewPage = () => {
     }
 
     try {
-      const response = await fetch(`https://travelcheck-hzdwesazbcead2bm.canadacentral-01.azurewebsites.net/reviews/${reviewId}/like`, {
+      const response = await fetch(`https://travelcheck.azurewebsites.net/reviews/${reviewId}/like`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -207,7 +207,7 @@ const ReviewPage = () => {
 
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`https://travelcheck-hzdwesazbcead2bm.canadacentral-01.azurewebsites.net/reviews/${reviewId}/comments`, {
+      const response = await fetch(`https://travelcheck.azurewebsites.net/reviews/${reviewId}/comments`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -249,7 +249,7 @@ const ReviewPage = () => {
   const fetchCommentsForReview = async (reviewId, page = 1) => {
     try {
       const response = await fetch(
-        `https://travelcheck-hzdwesazbcead2bm.canadacentral-01.azurewebsites.net/reviews/${reviewId}/comments?page=${page}&limit=${COMMENTS_PER_PAGE}`
+        `https://travelcheck.azurewebsites.net/reviews/${reviewId}/comments?page=${page}&limit=${COMMENTS_PER_PAGE}`
       );
       const data = await response.json();
 
