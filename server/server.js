@@ -14,10 +14,8 @@ const settingsRoutes = require('./settingsRoutes');
 const manageRoutes = require('./manageRoutes');
 const adminUserRoutes = require('./adminUserRoutes');
 const corsOptions = {
-  origin: [
+  origin: 
     'https://gray-moss-0fcb3ef1e.5.azurestaticapps.net',
-    'https://travelcheck-hzdwesazbcead2bm.canadaeast-01.azurewebsites.net'
-  ],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'x-requested-with'],
   credentials: true,

@@ -1,19 +1,6 @@
 {
-  "routes": [
-    {
-      "route": "/*",
-      "methods": [
-        "get",
-        "head",
-        "post",
-        "put",
-        "delete",
-        "connect",
-        "options",
-        "trace",
-        "patch"
-      ],
-      "statusCode": 200
-    }
-  ]
+  "globalHeaders": {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS"
+  }
 }

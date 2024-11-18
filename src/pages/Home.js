@@ -67,7 +67,7 @@ const Home = () => {
       console.log('Fetching reviews for:', place.name);
 
       const response = await fetch(
-        `https://travelcheck-hzdwesazbcead2bm.canadaeast-01.azurewebsites.net/map/reviews?name=${encodeURIComponent(place.name)}`
+        `https://travelcheck-hzdwesazbcead2bm.canadacentral-01.azurewebsites.net/map/reviews?name=${encodeURIComponent(place.name)}`
       );
 
       if (!response.ok) throw new Error('Network response was not ok');
@@ -199,7 +199,7 @@ const Home = () => {
     }
 
     try {
-      const response = await fetch('https://travelcheck-hzdwesazbcead2bm.canadaeast-01.azurewebsites.net/favorites', {
+      const response = await fetch('https://travelcheck-hzdwesazbcead2bm.canadacentral-01.azurewebsites.net/favorites', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
