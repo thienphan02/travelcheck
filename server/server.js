@@ -23,8 +23,7 @@ const server = http.createServer(app);
 const wss = new WebSocket.Server({ noServer: true });
 
 const corsOptions = {
-  origin: 
-    'https://gray-moss-0fcb3ef1e.5.azurestaticapps.net',
+  origin:'*', // Use '*' for development or set this to your Heroku app URL in production
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'x-requested-with'],
   credentials: true,
@@ -32,12 +31,6 @@ const corsOptions = {
 
 app.use(express.json());
 app.use(cors(corsOptions));
-app.options('*', (req, res) => {
-  res.header('Access-Control-Allow-Origin', 'https://gray-moss-0fcb3ef1e.5.azurestaticapps.net');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-requested-with');
-  res.status(204).send(); // No Content
-});
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 
