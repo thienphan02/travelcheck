@@ -26,10 +26,10 @@ const ManagePost = () => {
     const fetchData = async () => {
       try {
         const [reviewResponse, commentResponse, blogResponse, blogCommentResponse] = await Promise.all([
-          fetch('https://travelcheck.azurewebsites.net/manage/reviews', { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }),
-          fetch('https://travelcheck.azurewebsites.net/manage/comments', { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }),
-          fetch('https://travelcheck.azurewebsites.net/manage/blogs', { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }),
-          fetch('https://travelcheck.azurewebsites.net/manage/blog-comments', { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }),
+          fetch('https://travelcheck-1016857315f8.herokuapp.com/manage/reviews', { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }),
+          fetch('https://travelcheck-1016857315f8.herokuapp.com/manage/comments', { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }),
+          fetch('https://travelcheck-1016857315f8.herokuapp.com/manage/blogs', { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }),
+          fetch('https://travelcheck-1016857315f8.herokuapp.com/manage/blog-comments', { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }),
         ]);
 
         const [reviewsData, commentsData, blogsData, blogCommentsData] = await Promise.all([
@@ -70,7 +70,7 @@ const ManagePost = () => {
 
   const handleDeleteReview = async (reviewId) => {
     if (window.confirm('Are you sure you want to delete this review?')) {
-      await fetch(`https://travelcheck.azurewebsites.net/reviews/${reviewId}`, {
+      await fetch(`https://travelcheck-1016857315f8.herokuapp.com/reviews/${reviewId}`, {
         method: 'DELETE',
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`,
@@ -84,7 +84,7 @@ const ManagePost = () => {
 
   const handleDeleteComment = async (commentId) => {
     if (window.confirm('Are you sure you want to delete this comment?')) {
-      await fetch(`https://travelcheck.azurewebsites.net/comments/${commentId}`, {
+      await fetch(`https://travelcheck-1016857315f8.herokuapp.com/comments/${commentId}`, {
         method: 'DELETE',
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`,
@@ -115,7 +115,7 @@ const ManagePost = () => {
     }
 
     try {
-      const response = await fetch(`https://travelcheck.azurewebsites.net/reviews/${editReviewId}`, {
+      const response = await fetch(`https://travelcheck-1016857315f8.herokuapp.com/reviews/${editReviewId}`, {
         method: 'PUT',
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`,
@@ -152,7 +152,7 @@ const ManagePost = () => {
 
   const handleUpdateComment = async (e) => {
     e.preventDefault();
-    await fetch(`https://travelcheck.azurewebsites.net/comments/${editCommentId}`, {
+    await fetch(`https://travelcheck-1016857315f8.herokuapp.com/comments/${editCommentId}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -188,7 +188,7 @@ const ManagePost = () => {
 
   const handleDeleteBlog = async (blogId) => {
     if (window.confirm('Are you sure you want to delete this blog?')) {
-      await fetch(`https://travelcheck.azurewebsites.net/blogs/${blogId}`, {
+      await fetch(`https://travelcheck-1016857315f8.herokuapp.com/blogs/${blogId}`, {
         method: 'DELETE',
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`,
@@ -200,7 +200,7 @@ const ManagePost = () => {
 
   const handleDeleteBlogComment = async (commentId) => {
     if (window.confirm('Are you sure you want to delete this blog comment?')) {
-      await fetch(`https://travelcheck.azurewebsites.net/blog-comments/${commentId}`, {
+      await fetch(`https://travelcheck-1016857315f8.herokuapp.com/blog-comments/${commentId}`, {
         method: 'DELETE',
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`,
@@ -224,7 +224,7 @@ const ManagePost = () => {
     }
   
     try {
-      const response = await fetch(`https://travelcheck.azurewebsites.net/blogs/${editBlogId}`, {
+      const response = await fetch(`https://travelcheck-1016857315f8.herokuapp.com/blogs/${editBlogId}`, {
         method: 'PUT',
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`,
@@ -253,7 +253,7 @@ const ManagePost = () => {
 
   const handleUpdateBlogComment = async (e) => {
     e.preventDefault();
-    await fetch(`https://travelcheck.azurewebsites.net/blog-comments/${editBlogCommentId}`, {
+    await fetch(`https://travelcheck-1016857315f8.herokuapp.com/blog-comments/${editBlogCommentId}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',

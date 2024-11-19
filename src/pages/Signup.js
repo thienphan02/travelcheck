@@ -26,7 +26,7 @@ const SignUpPage = () => {
         const signupData = { username, password, email };
 
         try {
-            const response = await fetch('https://travelcheck.azurewebsites.net/signup', {
+            const response = await fetch('https://travelcheck-1016857315f8.herokuapp.com/signup', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
