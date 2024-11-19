@@ -5,7 +5,6 @@ const fs = require('fs').promises;
 const JWT_SECRET = process.env.JWT_SECRET;
 const { BlobServiceClient } = require('@azure/storage-blob');
 const AZURE_STORAGE_CONNECTION_STRING = process.env.AZURE_STORAGE_CONNECTION_STRING;
-const multerMiddleware = multer({ storage });
 
 const verifyToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
@@ -36,6 +35,8 @@ const storage = multer.diskStorage({
   filename: (req, file, cb) => cb(null, Date.now() + path.extname(file.originalname))
 });
 
+const multerMiddleware = multer({ storage });
+
 const upload = async (file) => {
   try {
     const blobServiceClient = BlobServiceClient.fromConnectionString(AZURE_STORAGE_CONNECTION_STRING);
@@ -58,4 +59,4 @@ const upload = async (file) => {
   }
 };
 
-module.exports = { verifyToken, isMember, isAdmin, upload, multerMiddleware };
+module.exports = { verifyToken, isMember, isAdmin, upload, multerMiddleware  };

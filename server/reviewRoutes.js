@@ -1,6 +1,6 @@
 const express = require('express');
 const db = require('./db');
-const { verifyToken, isMember, upload } = require('./middlewares');
+const { verifyToken, isMember, upload, multerMiddleware } = require('./middlewares');
 const router = express.Router();
 
 // Add a new location
@@ -68,7 +68,7 @@ router.get('/reviews', verifyToken, (req, res) => {
 });
 
 // Submit a new review
-router.post('/reviews', verifyToken, isMember, upload.single('image'), async (req, res) => {
+router.post('/reviews', verifyToken, isMember, multerMiddleware.single('image'), async (req, res) => {
   const { rating, review_text, location_id } = req.body;
   const writerId = req.userId;
   const imageUrl = req.file ? await upload(req.file) : null;
