@@ -10,7 +10,7 @@ const db = mysql.createConnection({
   port: 3306, 
   ssl: true, 
   sslOptions: {
-    rejectUnauthorized: false
+    rejectUnauthorized: true
   }
 });
 
