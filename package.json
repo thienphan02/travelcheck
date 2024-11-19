@@ -2,6 +2,10 @@
   "name": "travelcheck",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": "20.x",
+    "npm": ">=7.x"
+  },
   "dependencies": {
     "20": "^3.1.9",
     "@azure/storage-blob": "^12.25.0",
@@ -38,12 +42,12 @@
     "ws": "^8.18.0"
   },
   "scripts": {
-  "start": "node server/server.js", 
-  "build": "react-scripts build",
-  "heroku-postbuild": "npm install && npm run build",
-  "test": "react-scripts test",
-  "eject": "react-scripts eject"
-},
+    "start": "node server/server.js",
+    "build": "react-scripts build",
+    "heroku-postbuild": "npm install && npm run build",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject"
+  },
   "eslintConfig": {
     "extends": [
       "react-app",
@@ -66,8 +70,5 @@
   "main": "index.js",
   "keywords": [],
   "author": "",
-  "license": "ISC",
-  "devDependencies": {
-    "@babel/plugin-proposal-private-property-in-object": "^7.21.11"
-  }
+  "license": "ISC"
 }
