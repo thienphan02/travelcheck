@@ -1,6 +1,6 @@
 const express = require('express');
 const db = require('./db');
-const { verifyToken, upload } = require('./middlewares');
+const { verifyToken, upload, multerMiddleware } = require('./middlewares');
 const router = express.Router();
 
 // Fetch all reviews by the logged-in user
@@ -41,7 +41,7 @@ router.get('/manage/comments', verifyToken, (req, res) => {
 });
 
 // Update a review
-router.put('/reviews/:id', verifyToken, upload.single('image'), async (req, res) => {
+router.put('/reviews/:id', verifyToken, multerMiddleware.single('image'), async (req, res) => {
   const reviewId = req.params.id;
   const { review_text, rating, location_id, delete_image } = req.body;
   const imageUrl = req.file ? await upload(req.file) : null;
@@ -134,7 +134,7 @@ router.get('/manage/blog-comments', verifyToken, (req, res) => {
 });
 
 // Update a blog
-router.put('/blogs/:id', verifyToken, upload.single('image'), async (req, res) => {
+router.put('/blogs/:id', verifyToken, multerMiddleware.single('image'), async (req, res) => {
   const blogId = req.params.id;
   const { content, title, delete_image } = req.body;
   const imageUrl = req.file ? await upload(req.file) : null;

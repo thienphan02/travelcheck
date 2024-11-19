@@ -1,6 +1,6 @@
 const express = require('express');
 const db = require('./db');
-const { verifyToken, isMember, upload } = require('./middlewares');
+const { verifyToken, isMember, upload, multerMiddleware } = require('./middlewares');
 const router = express.Router();
 
 // Fetch all blogs with like counts
@@ -25,7 +25,7 @@ router.get('/blogs', (req, res) => {
 });
 
 // Create a new blog post
-router.post('/blogs', verifyToken, isMember, upload.single('image'), async (req, res) => {
+router.post('/blogs', verifyToken, isMember, multerMiddleware.single('image'), async (req, res) => {
   const { title, content } = req.body;
   const authorId = req.userId;
   const imageUrl = req.file ? await upload(req.file) : null;
