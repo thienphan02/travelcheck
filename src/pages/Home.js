@@ -11,7 +11,7 @@ const LIBRARIES = ['places'];
 const getResponsiveConfig = (placesCount) => ({
   desktop: { breakpoint: { max: 3000, min: 1024 }, items: Math.min(placesCount, 4), slidesToSlide: 1 },
   tablet: { breakpoint: { max: 1024, min: 464 }, items: Math.min(placesCount, 2), slidesToSlide: 1 },
-  mobile: { breakpoint: { max: 320, min: 0 }, items: Math.min(placesCount, 1), slidesToSlide: 1 },
+  mobile: { breakpoint: { max: 464, min: 0 }, items: Math.min(placesCount, 1), slidesToSlide: 1 },
 });
 
 const Home = () => {
@@ -275,9 +275,10 @@ const Home = () => {
             {places.length > 0 ? (
               <ul>
                 <Carousel
-                  responsive={getResponsiveConfig(places.length)}
+                  responsive={getResponsiveConfig(places.length) }
                   partialVisible
                   arrows
+                  key={windowWidth}
                   // arrows={!isLastSlide(category, places)}
                   // afterChange={(previousSlide) => updateCarouselIndex(category, previousSlide)}
                   className="carousel-container"
