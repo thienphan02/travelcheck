@@ -278,7 +278,6 @@ const Home = () => {
                   responsive={getResponsiveConfig(places.length) }
                   partialVisible
                   arrows
-                  key={windowWidth}
                   // arrows={!isLastSlide(category, places)}
                   // afterChange={(previousSlide) => updateCarouselIndex(category, previousSlide)}
                   className="carousel-container"
