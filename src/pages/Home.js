@@ -112,18 +112,7 @@ const Home = () => {
     getCurrentLocation();
   }, [isLoaded]);
 
-  useEffect(() => {
-    if (isLoaded && locationCoords.lat && locationCoords.lng) {
-      const newSearchOptions = {
-        location: new window.google.maps.LatLng(locationCoords.lat, locationCoords.lng),
-        radius: 50000,
-      };
-      setSearchOptions(newSearchOptions);
-      if (autocompleteSearch) {
-        autocompleteSearch.setOptions(newSearchOptions); // Update the autocomplete options
-      }
-    }
-  }, [locationCoords, isLoaded, autocompleteSearch]);
+  
 
   const fetchRecommendedPlaces = async (latitude, longitude, category) => {
     if (window.google) {
