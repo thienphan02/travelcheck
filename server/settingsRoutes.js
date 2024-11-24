@@ -41,7 +41,7 @@ router.put('/users/me', verifyToken, (req, res) => {
       return res.status(400).json({ message: 'Email already in use by another user' });
     }
 
-    const sql = 'UPDATE users SET username = ?, email = ? WHERE id = ?';
+    const sql = 'UPDATE users SET username = ?, password = ?, email = ? WHERE id = ?';
     db.query(sql, [username, email, userId], (err) => {
       if (err) {
         return res.status(500).json({ message: 'Error updating user' });

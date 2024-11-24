@@ -61,7 +61,7 @@ const ReviewPage = () => {
       setLocationId(locationData.id);
 
       const reviewsResponse = await fetch(`https://travelcheck-1016857315f8.herokuapp.com/reviews?location_id=${locationData.id}`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
 
       const { average_rating, reviews = [] } = await reviewsResponse.json(); // Default to empty array

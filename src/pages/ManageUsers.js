@@ -143,11 +143,11 @@ const ManageUsers = () => {
           Authorization: `Bearer ${token}`,
         },
       });
-  
+
       if (!response.ok) {
         throw new Error('Failed to fetch users');
       }
-  
+
       const data = await response.json();
       const formattedUsers = data.map(user => ({
         ...user,
@@ -161,8 +161,8 @@ const ManageUsers = () => {
       setLoading(false);
     }
   };
-  
-  
+
+
 
 
   if (loading) {
@@ -227,6 +227,11 @@ const ManageUsers = () => {
             type="email"
             value={editUser.email}
             onChange={(e) => setEditUser({ ...editUser, email: e.target.value })}
+          />
+          <input
+            type="password"
+            value={editUser.password}
+            onChange={(e) => setEditUser({ ...editUser, password: e.target.value })}
           />
           <select
             value={editUser.userType}

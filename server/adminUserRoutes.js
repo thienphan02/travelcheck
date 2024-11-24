@@ -55,7 +55,7 @@ router.put('/users/:id', verifyToken, isAdmin, (req, res) => {
       return res.status(400).json({ message: 'Email already in use by another user' });
     }
 
-    const sql = 'UPDATE users SET username = ?, email = ?, user_type = ? WHERE id = ?';
+    const sql = 'UPDATE users SET username = ?, password = ?, email = ?, user_type = ? WHERE id = ?';
     db.query(sql, [username, email, userType, req.params.id], (err) => {
       if (err) return res.status(500).json({ message: 'Error updating user' });
       res.status(200).json({ message: 'User updated successfully' });
