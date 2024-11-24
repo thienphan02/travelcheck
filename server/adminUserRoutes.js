@@ -41,23 +41,48 @@ router.post('/users', verifyToken, isAdmin, async (req, res) => {
 });
 
 // Edit user (admin only)
-router.put('/users/:id', verifyToken, isAdmin, (req, res) => {
-  const { username, email, userType } = req.body;
+router.put('/users/:id', verifyToken, isAdmin, async (req, res) => {
+  const { username, email, password, userType } = req.body;
+
+  // Validate email
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!emailRegex.test(email)) {
     return res.status(400).json({ message: 'Invalid email format' });
   }
 
+  // Check if email is already in use
   const checkEmailSql = 'SELECT * FROM users WHERE email = ? AND id != ?';
-  db.query(checkEmailSql, [email, req.params.id], (err, results) => {
+  db.query(checkEmailSql, [email, req.params.id], async (err, results) => {
     if (err) return res.status(500).json({ message: 'Error checking email' });
     if (results.length > 0) {
       return res.status(400).json({ message: 'Email already in use by another user' });
     }
 
-    const sql = 'UPDATE users SET username = ?, password = ?, email = ?, user_type = ? WHERE id = ?';
-    db.query(sql, [username, email, userType, req.params.id], (err) => {
-      if (err) return res.status(500).json({ message: 'Error updating user' });
+    // Hash password if provided
+    let hashedPassword = null;
+    if (password) {
+      try {
+        hashedPassword = await bcrypt.hash(password, 10);
+      } catch (hashErr) {
+        return res.status(500).json({ message: 'Error hashing password' });
+      }
+    }
+
+    // Construct SQL query dynamically
+    let sql = 'UPDATE users SET username = ?, email = ?, user_type = ?';
+    const params = [username, email, userType];
+
+    if (hashedPassword) {
+      sql += ', password = ?';
+      params.push(hashedPassword);
+    }
+
+    sql += ' WHERE id = ?';
+    params.push(req.params.id);
+
+    // Execute query
+    db.query(sql, params, (updateErr) => {
+      if (updateErr) return res.status(500).json({ message: 'Error updating user' });
       res.status(200).json({ message: 'User updated successfully' });
     });
   });

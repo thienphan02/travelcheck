@@ -89,6 +89,7 @@ const ManageUsers = () => {
 
       if (response.ok) {
         await fetchUsers();
+        setUsers(users.map((user) => (user.id === editUser.id ? editUser : user)));
         setEditUser(null);
         alert('User updated successfully');
       } else {

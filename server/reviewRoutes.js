@@ -26,7 +26,7 @@ router.post('/locations', (req, res) => {
 });
 
 // Fetch reviews with average ratings for a location
-router.get('/reviews', verifyToken, (req, res) => {
+router.get('/reviews', (req, res) => {
   const { location_id } = req.query;
   const userId = req.userId || null;
 
