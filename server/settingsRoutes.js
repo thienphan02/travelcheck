@@ -25,7 +25,7 @@ router.get('/users/me', verifyToken, (req, res) => {
 // Edit user info (logged-in user only)
 router.put('/users/me', verifyToken, (req, res) => {
   const userId = req.userId;
-  const { username, email } = req.body;
+  const { username, email, userType } = req.body;
 
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!emailRegex.test(email)) {
@@ -41,8 +41,8 @@ router.put('/users/me', verifyToken, (req, res) => {
       return res.status(400).json({ message: 'Email already in use by another user' });
     }
 
-    const sql = 'UPDATE users SET username = ?, password = ?, email = ? WHERE id = ?';
-    db.query(sql, [username, email, userId], (err) => {
+    const sql = 'UPDATE users SET username = ?, password = ?, email = ?, user_type = ? WHERE id = ?';
+    db.query(sql, [username, email, userType, userId], (err, result) => {
       if (err) {
         return res.status(500).json({ message: 'Error updating user' });
       }
