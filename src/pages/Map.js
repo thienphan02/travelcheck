@@ -26,11 +26,13 @@ const MapPage = () => {
   const [autocompleteTo, setAutocompleteTo] = useState(null);
   const [isFavorite, setIsFavorite] = useState(false);
 
+  // Load Google Maps API
   const { isLoaded, loadError } = useLoadScript({
     googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY,
     libraries: LIBRARIES,
   });
 
+  // Fetch reviews for a given place.
   const fetchReviews = async (placeName) => {
     try {
       const response = await fetch(
@@ -45,6 +47,7 @@ const MapPage = () => {
     }
   };
 
+  // Add the selected place to the user's favorites.
   const handleAddToFavorites = async () => {
     if (!selectedPlace) {
       alert('Please select a place to add to favorites.');
@@ -79,8 +82,8 @@ const MapPage = () => {
       alert('Error adding to favorites.');
     }
   };
-  
 
+  //Handle user geolocation to center the map on their current location.
   useEffect(() => {
     const handleGeolocation = () => {
       if (navigator.geolocation) {
@@ -100,11 +103,6 @@ const MapPage = () => {
 
     handleGeolocation();
   }, []);
-
-  // const handleMarkerClick = (marker) => {
-  //   setSelectedPlace(marker); // Set selected place
-  //   fetchReviews(marker.name); // Fetch reviews based on place name
-  // };
 
   // Handle both text and nearby search
   const onSearch = () => {
@@ -206,10 +204,6 @@ const MapPage = () => {
     }
   };
 
-
-
-
-
   const handleMapClick = (event) => {
     const lat = event.latLng.lat();
     const lng = event.latLng.lng();
@@ -236,6 +230,7 @@ const MapPage = () => {
     );
   };
 
+  // Handle directions between two locations.
   const handleDirectionsRequest = () => {
     if (autocompleteFrom && autocompleteTo) {
       const fromPlace = autocompleteFrom.getPlace();
@@ -259,12 +254,14 @@ const MapPage = () => {
     }
   };
 
+  // Calculate the average rating from the fetched reviews.
   const calculateAverageRating = () => {
     if (reviews.length === 0) return 0;
     const total = reviews.reduce((acc, review) => acc + review.rating, 0);
-    return (total / reviews.length).toFixed(1);
+    return (total / reviews.length).toFixed(1); // rounded to one decimal place.
   };
 
+  // Render star icons based on the average rating.
   const renderStars = () => {
     const average = Math.round(calculateAverageRating());
     return Array.from({ length: 5 }, (_, index) => (
@@ -281,6 +278,7 @@ const MapPage = () => {
 
   return (
     <div className="map-container">
+      {/* Search and directions inputs */}
       <div className="search-container">
         <Autocomplete
           onLoad={(autocompleteInstance) => setAutocomplete(autocompleteInstance)}
@@ -361,6 +359,7 @@ const MapPage = () => {
           />
         ))}
 
+        {/* Markers */}
         {directionsResponse && (
           <DirectionsRenderer directions={directionsResponse} />
         )}

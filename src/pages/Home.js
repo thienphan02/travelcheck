@@ -8,6 +8,7 @@ import { FaHeart, FaRegHeart } from 'react-icons/fa';
 
 const LIBRARIES = ['places'];
 
+// Generates a responsive configuration for the carousel based on the number of places.
 const getResponsiveConfig = (placesCount) => ({
   desktop: { breakpoint: { max: 3000, min: 1024 }, items: Math.min(placesCount, 4), slidesToSlide: 1 },
   tablet: { breakpoint: { max: 1024, min: 464 }, items: Math.min(placesCount, 2), slidesToSlide: 1 },
@@ -42,6 +43,7 @@ const Home = () => {
     libraries: LIBRARIES,
   });
 
+  // Checks if a place is in the user's favorites.
   const isFavorite = (placeId) => favorites.includes(placeId);
 
   useEffect(() => {
@@ -61,7 +63,7 @@ const Home = () => {
   };
 
 
-
+  //  Fetches reviews for the selected place and updates the reviews state.
   const fetchReviews = async (place) => {
     try {
       console.log('Fetching reviews for:', place.name);
@@ -80,6 +82,7 @@ const Home = () => {
     }
   };
 
+  // Fetches the user's current location using the Geolocation API and sets it as the center of the map.
   useEffect(() => {
     const getCurrentLocation = () => {
       if (navigator.geolocation && isLoaded) {
@@ -113,7 +116,7 @@ const Home = () => {
   }, [isLoaded]);
 
   
-
+  //Fetches recommendations for a specific category based on the user's current location.
   const fetchRecommendedPlaces = async (latitude, longitude, category) => {
     if (window.google) {
       const service = new window.google.maps.places.PlacesService(document.createElement('div'));
@@ -141,6 +144,7 @@ const Home = () => {
     }
   };
 
+  // Updates the user's location based on input from the Autocomplete field.
   const onLocationPlaceChanged = () => {
     if (autocompleteLocation) {
       const place = autocompleteLocation.getPlace();
@@ -181,6 +185,7 @@ const Home = () => {
     setAutocompleteSearch(null);
   };
 
+  // Handles add a place to favorite
   const handleAddToFavorites = async (place) => {
     if (!token) {
       alert('You must be logged in to add favorites.');
@@ -267,15 +272,13 @@ const Home = () => {
                   responsive={getResponsiveConfig(places.length) }
                   partialVisible
                   arrows
-                  // arrows={!isLastSlide(category, places)}
-                  // afterChange={(previousSlide) => updateCarouselIndex(category, previousSlide)}
                   className="carousel-container"
                 >
                   {places.map((place) => (
                     <li
                       key={place.place_id}
                       className="carousel-item"
-                      onClick={() => handlePlaceClick(place)} // Call handlePlaceClick here
+                      onClick={() => handlePlaceClick(place)}
                       style={{ cursor: 'pointer' }}
                     >
                       <h4 className="place-name">{place.name}</h4>

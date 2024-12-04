@@ -21,7 +21,7 @@ const ManagePost = () => {
   const [locationId, setLocationId] = useState(null);
   const [activeTab, setActiveTab] = useState('reviews');
 
-
+  // Fetch data for reviews, comments, blogs, and blog comments.
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -51,6 +51,7 @@ const ManagePost = () => {
     fetchData();
   }, []);
 
+  // Handles editing a review.
   const handleEditReview = (review) => {
     setEditReviewId(review.id);
     setEditReviewText(review.review_text);
@@ -60,14 +61,13 @@ const ManagePost = () => {
   };
 
 
-
+  // Handles editing a comment
   const handleEditComment = (comment) => {
     setEditCommentId(comment.id);
     setEditCommentText(comment.comment);
   };
 
-
-
+  // Handles deleting a review.
   const handleDeleteReview = async (reviewId) => {
     if (window.confirm('Are you sure you want to delete this review?')) {
       await fetch(`https://travelcheck-1016857315f8.herokuapp.com/reviews/${reviewId}`, {
@@ -81,7 +81,7 @@ const ManagePost = () => {
   };
 
 
-
+  // Handles deleting a comment.
   const handleDeleteComment = async (commentId) => {
     if (window.confirm('Are you sure you want to delete this comment?')) {
       await fetch(`https://travelcheck-1016857315f8.herokuapp.com/comments/${commentId}`, {
@@ -95,7 +95,7 @@ const ManagePost = () => {
   };
 
 
-
+  // Handles updating a review after editing
   const handleUpdateReview = async (e) => {
     e.preventDefault();
     if (!locationId) {
@@ -143,13 +143,7 @@ const ManagePost = () => {
     }
   };
 
-
-
-
-
-
-
-
+  // Handles update a comment
   const handleUpdateComment = async (e) => {
     e.preventDefault();
     await fetch(`https://travelcheck-1016857315f8.herokuapp.com/comments/${editCommentId}`, {
@@ -170,22 +164,25 @@ const ManagePost = () => {
   };
 
 
-
+  // Handles update a new image
   const handleImageChange = (e) => {
     setEditImageURL(e.target.files[0]); // Store the selected image
   };
 
-
+  // Handles edit a blog
   const handleEditBlog = (blog) => {
     setEditBlogId(blog.id);
     setEditBlogText(blog.content); // Set the current blog content
     setEditBlogTitle(blog.title);
   };
+
+  // Handles update a blog comment
   const handleEditBlogComment = (comment) => {
     setEditBlogCommentId(comment.id);
     setEditBlogCommentText(comment.comment);
   };
 
+  // Handles delete a blog
   const handleDeleteBlog = async (blogId) => {
     if (window.confirm('Are you sure you want to delete this blog?')) {
       await fetch(`https://travelcheck-1016857315f8.herokuapp.com/blogs/${blogId}`, {
@@ -198,6 +195,7 @@ const ManagePost = () => {
     }
   };
 
+  // Handles delete a blog comment
   const handleDeleteBlogComment = async (commentId) => {
     if (window.confirm('Are you sure you want to delete this blog comment?')) {
       await fetch(`https://travelcheck-1016857315f8.herokuapp.com/blog-comments/${commentId}`, {
@@ -210,6 +208,7 @@ const ManagePost = () => {
     }
   };
 
+  // Handles edit a blog
   const handleUpdateBlog = async (e) => {
     e.preventDefault();
   
@@ -250,7 +249,7 @@ const ManagePost = () => {
     }
   };
   
-
+  // Handles edit a blog comment
   const handleUpdateBlogComment = async (e) => {
     e.preventDefault();
     await fetch(`https://travelcheck-1016857315f8.herokuapp.com/blog-comments/${editBlogCommentId}`, {

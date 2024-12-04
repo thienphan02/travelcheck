@@ -6,24 +6,25 @@ const SettingsPage = () => {
   const [error, setError] = useState(null);
   const [emailError, setEmailError] = useState('');
 
+  // Fetches user information when the component is mounted using the stored token for authorization.
   useEffect(() => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('token'); // Retrieve the JWT token from localStorage
 
     const fetchUserInfo = async () => {
       try {
-        const response = await fetch('https://travelcheck-1016857315f8.herokuapp.com/users/me', { // Adjust the endpoint to fetch the current user
+        const response = await fetch('https://travelcheck-1016857315f8.herokuapp.com/users/me', { // API endpoint for fetching user info
           headers: {
             Authorization: `Bearer ${token}`,
           },
         });
 
         if (!response.ok) {
-          throw new Error('Failed to fetch user info');
+          throw new Error('Failed to fetch user info'); // Handle unsuccessful responses
         }
 
         const data = await response.json();
-        setUserInfo(data); // Assuming the response contains { username, email }
-        setLoading(false);
+        setUserInfo(data); // Update userInfo state with fetched data
+        setLoading(false); // Stop loading spinner
       } catch (error) {
         setError(error.message);
         setLoading(false);
@@ -33,6 +34,8 @@ const SettingsPage = () => {
     fetchUserInfo();
   }, []);
 
+
+  // Handles updating user information. Sends updated user information to the server using a PUT request with JWT authorization.
   const handleUpdateUserInfo = async () => {
     const token = localStorage.getItem('token');
     try {
@@ -42,7 +45,7 @@ const SettingsPage = () => {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(userInfo),
+        body: JSON.stringify(userInfo), // Send the updated user data
       });
 
       if (response.ok) {
@@ -57,14 +60,15 @@ const SettingsPage = () => {
     }
   };
 
+  // Validates the email format and updates the `userInfo` state.
   const handleEmailChange = (e) => {
     setUserInfo({ ...userInfo, email: e.target.value });
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(e.target.value)) {
-      setEmailError('Invalid email format');
+      setEmailError('Invalid email format'); // Set error if email is invalid
     } else {
-      setEmailError('');
+      setEmailError(''); // Clear error if email is valid
     }
   };
 

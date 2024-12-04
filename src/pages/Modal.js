@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import "../styles/style.css";
 import { FaStar } from "react-icons/fa";
 
+// This component displays detailed information about a selected place, including its images and reviews.
 const Modal = ({ place, reviews, onClose }) => {
   const [selectedImage, setSelectedImage] = useState(null);
 
@@ -12,10 +13,14 @@ const Modal = ({ place, reviews, onClose }) => {
     <>
       <div className={`modal-overlay ${place ? "show" : ""}`} onClick={onClose}>
         <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+          {/* Close Button */}
           <button className="close-button" onClick={onClose}>&times;</button>
+
+          {/* Place Details */}
           <h2>{place.name}</h2>
           <p>{place.formatted_address || place.vicinity}</p>
 
+          {/* Place Photos */}
           {place.photos?.length > 0 && (
             <div className="modal-images">
               {place.photos.map((photo, index) => (
@@ -30,6 +35,7 @@ const Modal = ({ place, reviews, onClose }) => {
             </div>
           )}
 
+          {/* Reviews Section */}
           <h3>Reviews</h3>
           <p className="average-rating">
             <strong>
@@ -58,7 +64,10 @@ const Modal = ({ place, reviews, onClose }) => {
                     ))}
                   </div>
                 </div>
+                {/* Review Text */}
                 <p className="review-text">{review.review_text}</p>
+
+                {/* Review Image */}
                 {review.image_url && (
                   <img
                     src={review.image_url}

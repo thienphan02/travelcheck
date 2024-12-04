@@ -11,13 +11,15 @@ const SignUpPage = () => {
     const [emailError, setEmailError] = useState('');
     const navigate = useNavigate();
 
+    // Adds a CSS class to the body element for styling purposes and removes it on component unmount.
     useEffect(() => {
         document.body.classList.add('auth-body');
         return () => {
-            document.body.classList.remove('auth-body'); // Clean up on unmount
+            document.body.classList.remove('auth-body');
         };
     }, []);
 
+    // Handles form submission. Prevents the default form submission behavior, validates inputs, and sends a POST request to the signup API.
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
@@ -48,14 +50,15 @@ const SignUpPage = () => {
         }
     };
 
+    // Handles email input changes. Validates the email format using a regular expression and updates the emailError state if invalid.
     const handleEmailChange = (e) => {
         setEmail(e.target.value);
 
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(e.target.value)) {
-            setEmailError('Invalid email format');
+            setEmailError('Invalid email format'); // Set error message if email is invalid
         } else {
-            setEmailError('');
+            setEmailError(''); // Clear error message if email is valid
         }
     };
 

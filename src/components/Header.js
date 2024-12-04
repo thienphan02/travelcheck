@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { jwtDecode } from 'jwt-decode';
 import '../styles/style.css';
-import gearIcon from '../img/settings-icon.png'; // Update the path as necessary
+import gearIcon from '../img/settings-icon.png'; 
 import '@fortawesome/fontawesome-free/css/all.min.css';
 
 
@@ -57,7 +57,6 @@ const Header = () => {
           </ul>
         </nav>
 
-       {/* Icon Group */}
     <div className="icon-group">
       {/* Hamburger Icon for Small Screens */}
       <label className="checkbtn" onClick={toggleMenu}>

@@ -3,7 +3,7 @@ const db = require('./db');
 const { verifyToken, isMember, upload, multerMiddleware } = require('./middlewares');
 const router = express.Router();
 
-// Add a new location
+// Add a new location or fetch existing location if it already exists.
 router.post('/locations', (req, res) => {
   const { name, address } = req.body;
   const findLocationSQL = 'SELECT * FROM locations WHERE name = ? AND address = ?';

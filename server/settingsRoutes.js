@@ -6,10 +6,11 @@ const bcrypt = require('bcrypt');
 
 // Fetch user info (logged-in user only)
 router.get('/users/me', verifyToken, (req, res) => {
-  const userId = req.userId;
+  const userId = req.userId; // Extract userId from the verified token
 
   const sql = 'SELECT id, username, email FROM users WHERE id = ?';
 
+  // Query the database to fetch user information
   db.query(sql, [userId], (err, results) => {
     if (err) {
       return res.status(500).json({ message: 'Error fetching user info' });
@@ -19,6 +20,7 @@ router.get('/users/me', verifyToken, (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
+    // Return the user's information
     res.json(results[0]);
   });
 });

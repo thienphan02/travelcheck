@@ -8,6 +8,7 @@ const FavoritesPage = () => {
     fetchFavorites();
   }, []);
 
+  // Fetches the list of favorites from the API.
   const fetchFavorites = async () => {
     try {
       const token = localStorage.getItem('token');

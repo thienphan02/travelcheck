@@ -11,6 +11,7 @@ const ManageUsers = () => {
   useEffect(() => {
     const token = localStorage.getItem('token');
 
+    // Fetches the list of users from the API.
     const fetchUsers = async () => {
       try {
         const response = await fetch('https://travelcheck-1016857315f8.herokuapp.com/users', {
@@ -35,6 +36,7 @@ const ManageUsers = () => {
     fetchUsers();
   }, []);
 
+  // Handles deleting a user.
   const handleDelete = async (id) => {
     const confirmDelete = window.confirm('Are you sure you want to delete this user and all their posts?');
 
@@ -63,12 +65,12 @@ const ManageUsers = () => {
       alert('Error: Unable to delete user');
     }
   };
-
-
+  
   const handleEdit = (user) => {
     setEditUser(user);
   };
 
+  // Handles saving changes to an edited user.
   const handleSaveEdit = async () => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(editUser.email)) {
@@ -88,9 +90,9 @@ const ManageUsers = () => {
       });
 
       if (response.ok) {
-        await fetchUsers();
+        await fetchUsers(); // Refresh user list
         setUsers(users.map((user) => (user.id === editUser.id ? editUser : user)));
-        setEditUser(null);
+        setEditUser(null); // Clear edit state
         alert('User updated successfully');
       } else {
         const errorData = await response.json();
@@ -102,7 +104,7 @@ const ManageUsers = () => {
     }
   };
 
-
+  // Handles creating a new user.
   const handleCreateUser = async () => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(newUser.email)) {
@@ -122,9 +124,9 @@ const ManageUsers = () => {
       });
 
       if (response.ok) {
-        await fetchUsers();
+        await fetchUsers(); // Refresh user list
         setNewUser({ username: '', email: '', userType: 'member', password: '' }); // Reset form
-        setShowCreateForm(false);
+        setShowCreateForm(false); // Hide form
         alert('User created successfully');
       } else {
         const errorData = await response.json();
@@ -162,9 +164,6 @@ const ManageUsers = () => {
       setLoading(false);
     }
   };
-
-
-
 
   if (loading) {
     return <div>Loading users...</div>;

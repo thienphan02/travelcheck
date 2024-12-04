@@ -6,6 +6,7 @@ import { faStar as fullStar, faStarHalfAlt as halfStar } from '@fortawesome/free
 import { faStar as emptyStar } from '@fortawesome/free-regular-svg-icons';
 import '../styles/style.css';
 
+// Google Maps API libraries
 const libraries = ['places'];
 
 const ReviewPage = () => {
@@ -29,7 +30,7 @@ const ReviewPage = () => {
   const [averageRating, setAverageRating] = useState(null); // Add averageRating state
 
 
-  const COMMENTS_PER_PAGE = 10;
+  const COMMENTS_PER_PAGE = 10; // Number of comments to fetch per page
 
   // Load Google Maps API
   const { isLoaded, loadError } = useLoadScript({
@@ -37,11 +38,13 @@ const ReviewPage = () => {
     libraries,
   });
 
+  //Checks if the user is logged in by verifying a token in localStorage.
   useEffect(() => {
     const token = localStorage.getItem('token');
     setIsLoggedIn(!!token);
   }, []);
 
+  // Handles the place selection event from Google Places Autocomplete. Fetches or creates the location in the backend and retrieves existing reviews.
   const handlePlaceChanged = async () => {
     const place = autocomplete.getPlace();
     const name = place.name;
@@ -51,6 +54,7 @@ const ReviewPage = () => {
     setAddress(address);
 
     try {
+      // Save location to the backend and fetch reviews
       const response = await fetch('https://travelcheck-1016857315f8.herokuapp.com/locations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -69,6 +73,7 @@ const ReviewPage = () => {
       setAverageRating(average_rating);
       setShowReviewSection(true);
 
+      // Initialize likes for the fetched reviews
       const initialLikes = {};
       reviews.forEach((review) => {
         initialLikes[review.id] = {
@@ -82,6 +87,7 @@ const ReviewPage = () => {
     }
   };
 
+  // Handles submission of a new review. Validates inputs, sends the data to the backend, and updates the reviews list.
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (rating === 0) {
@@ -128,17 +134,13 @@ const ReviewPage = () => {
   };
 
 
-
+  // Resets the review form fields while keeping location data visible.
   const resetForm = () => {
     setReview('');
     setRating(0);
-    // setLocationName('');
-    // setType('');
-    // setAddress('');
     setImage(null);
-    // setShowReviewSection(false);
-    setImageName(''); // Clear the image name
-    setImagePreview(''); // Clear the image preview URL
+    setImageName('');
+    setImagePreview('');
   };
 
   const handleImageChange = (e) => {
@@ -162,6 +164,7 @@ const ReviewPage = () => {
     }
   };
 
+  // Handles the like/unlike functionality for a review.
   const handleLike = async (reviewId) => {
     const token = localStorage.getItem('token');
     if (!token) {
@@ -199,6 +202,7 @@ const ReviewPage = () => {
     }
   };
 
+  // Handles the comment functionality for a review.
   const handleCommentSubmit = async (e, reviewId) => {
     e.preventDefault();
     const commentText = e.target.comment.value.trim();
@@ -237,7 +241,7 @@ const ReviewPage = () => {
   };
 
 
-
+ // Load more comments if it exceed the limit.
   const handleLoadMoreComments = (reviewId) => {
     setCommentPages((prev) => ({
       ...prev,
@@ -267,6 +271,7 @@ const ReviewPage = () => {
     }
   };
 
+  // Handle interactive stars rating
   useEffect(() => {
     reviews.forEach((review) => fetchCommentsForReview(review.id));
   }, [reviews]);
@@ -353,7 +358,7 @@ const ReviewPage = () => {
           <ul>
             {reviews.map((rev) => (
               <li key={rev.id} className="review-card">
-                <strong>Location:</strong> {rev.location_name}  <strong>Rating:</strong>
+                <strong>User:</strong> {rev.username}  <strong>Rating:</strong>
                 <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
                   {renderStars(rev.rating)}
                 </div>  <strong>Review:</strong> {rev.review_text}

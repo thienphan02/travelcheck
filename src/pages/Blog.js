@@ -20,12 +20,13 @@ const BlogPage = () => {
   const [imageName, setImageName] = useState(''); // Store image name for display
   const [imagePreview, setImagePreview] = useState(''); // Store image preview URL
 
-
+  // Check if the user is logged in
   useEffect(() => {
     const token = localStorage.getItem('token');
     setIsLoggedIn(!!token);
   }, []);
 
+  // Fetch blogs when the component mounts
   useEffect(() => {
     const fetchBlogs = async () => {
       try {
@@ -72,7 +73,7 @@ const BlogPage = () => {
     setFilteredBlogs(filtered);
   };
 
-
+  // Toggles the like status of a blog.
   const handleLike = async (blogId, liked) => {
     try {
       const token = localStorage.getItem('token');
@@ -121,7 +122,7 @@ const BlogPage = () => {
   };
   
   
-
+  // Handle post a comment on blog
   const handleCommentSubmit = async (e, blogId) => {
   e.preventDefault();
   const comment = e.target.comment.value.trim();
@@ -173,11 +174,8 @@ const BlogPage = () => {
     console.error('Error submitting comment:', error);
   }
 };
-
   
-  
-  
-
+  // Handles posting a new blog.
   const handlePostBlog = async (e) => {
     e.preventDefault();
     if (!isLoggedIn) {
@@ -229,6 +227,7 @@ const BlogPage = () => {
     ],
   };
 
+  // Handles readmore button
   const handleCardClick = async (blog) => {
     setSelectedBlog(blog);
     setComments([]); // Reset comments when opening a new blog
@@ -239,11 +238,12 @@ const BlogPage = () => {
     await loadMoreComments(blog.id, 1);
   };
   
-
+  // Handles close the opened blog
   const handleCloseBlog = () => {
     setSelectedBlog(null); // Close the detailed view
   };
 
+  // Loads more comments for a blog if have more comments than the limit.
   const loadMoreComments = async (blogId, page) => {
     try {
       const response = await fetch(

@@ -9,13 +9,15 @@ const LoginPage = () => {
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
 
+    // Adds a CSS class to the body element for styling and removes it on unmount.
     useEffect(() => {
         document.body.classList.add('auth-body');
         return () => {
-            document.body.classList.remove('auth-body'); // Clean up on unmount
+            document.body.classList.remove('auth-body');
         };
     }, []);
 
+    // Sends the email and password to the backend for authentication. Stores the token in localStorage on successful login.
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
